@@ -1,0 +1,140 @@
+/************* TAG Elements ******************/
+html, body {
+	margin: 0;
+	height: 100%;
+	width: 100%;
+	background: linear-gradient(rgba(23, 25, 55, 0.5),rgba(14, 15, 27, 0.8));
+	font-family: Arial;
+	overflow: hidden;
+}
+
+video {
+	height: 100%;
+	position: relative;
+	left: -33.5px;
+}
+
+/************** ID Elements ******************/
+#username-container {
+	border: 1px solid rgba(0,0,0,.8);
+	width: 300px;
+	text-align: center;
+	padding: 30px;
+	border-radius: 5px;
+	background-color: rgba(240, 240, 240, 0.8);
+	box-shadow: 3px 3px 3px rgba(0,0,0,.2);
+	position: absolute;
+	opacity: 1;
+	-webkit-transition: opacity 1s;
+}
+
+#self {
+	position: absolute;;
+	left: -33.5px;
+}
+
+#self ~ .fa {
+	bottom: 15px;
+	left: 88px;
+	font-size: 20px;
+}
+
+#self ~ .fa:hover {
+	cursor: pointer;
+}
+
+/************** Class Elements *****************/
+
+.title {
+	font-weight: bold;
+
+	margin-bottom: 5px;
+}
+
+.video-container {
+	width: 200px;
+	height: 200px;
+	overflow: hidden;
+	border-radius: 150px;
+	z-index: 1;
+	position: relative;
+	margin: 100px;
+	width: 0;
+	height: 0;
+	overflow: hidden;
+	z-index: 1;
+	-webkit-transition: width 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275),
+						height 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275),
+						margin 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275);
+
+}
+
+.video-container:hover {
+	cursor: move;
+}
+
+.video-container.keep-mic {
+	z-index: 5;
+}
+
+.remote-user  {
+	position: absolute;
+	/*opacity: 0;*/
+}
+
+
+#caller-container {
+	position: absolute;
+	top: 0;
+}
+
+.display-name{
+	position: absolute;
+	right: 5px;
+	bottom: 0px;
+	z-index: 10;
+	color: rgba(255,255,255,0.9);
+	font-size: 16px;
+	width: 100%;
+	text-align: center;
+	padding: 15px 0px 38px 0px;
+	background: linear-gradient(rgba(0,0,0,0.05),rgba(0, 0, 0, 0.7));
+}
+
+.fa {
+	position: absolute;
+	z-index: 10;
+	font-size: 20px;
+	color: rgba(255, 255, 255, .5);
+}
+
+.remote-user .fa-volume-off, .remote-user .fa-volume-up{
+	left: 110px;
+	bottom: 15px;
+	color: rgba(255,0,0,.5);
+}
+
+.remote-user .fa-volume-up{
+	color: rgba(0,255,0,.5);
+}
+
+.remote-user .fa-microphone-slash{
+	right: 110px;
+	bottom: 15px;
+	color: rgba(255,0,0,.5);
+}
+
+.remote-user .fa-microphone {
+	right: 113px;
+	bottom: 15px;
+	color: rgba(0,255,0,.5);
+}
+
+.remote-user .snapshot {
+	position: absolute;
+	left: -33.5px;
+	z-index: 1;
+	-webkit-filter: grayscale(1);
+	top: 0;
+	opacity: 1;
+}
