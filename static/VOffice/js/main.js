@@ -72,6 +72,10 @@ function roomListener(roomName, otherPeers) {
 function getSequenceNum(easyrtcid) {
 	easyrtc.sendServerMessage('getSequenceNum', null,
 		function(msgType, msgData ){
+			if(msgData == null){
+				getSequenceNum(easyrtcid);
+				return;
+			}
 			// msgData is the sequence number
 			console.log("sequence number received with " + msgData +
 					   " when evaluating " + easyrtcid);
@@ -270,6 +274,7 @@ function initUser(easyrtcid, stream){
     }
 };
 
+
 function getUserName(){
   centerInElement($("body"),$("#username-container"),true,true);
   $("#username-input").keypress(function(e){
@@ -281,6 +286,7 @@ function getUserName(){
       $("#username-container").css('opacity','0');
       $("#self").parent().find(".display-name").html($(this).val());
 
+      $("#tool-container").css('display', 'block');
       initCall()
 
     }

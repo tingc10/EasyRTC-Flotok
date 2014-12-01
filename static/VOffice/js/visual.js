@@ -122,3 +122,16 @@ function animateEnterRoom() {
 
 }
 
+$("#tool-container").on("mouseover", function(){
+  $("#tool-container .border:first-child ~ .border").css({
+    "opacity" : "1",
+    "margin-top" : "10px"
+  });
+});
+
+$("#tool-container").on("mouseleave", function(){
+  $("#tool-container .border:first-child ~ .border").css({
+    "opacity" : "0",
+    "margin-top" : "-46px"
+  });
+});

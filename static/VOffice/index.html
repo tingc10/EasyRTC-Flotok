@@ -7,12 +7,28 @@
 	<link rel="stylesheet" type="text/css" href="font-awesome/css/font-awesome.min.css" />
     <script src="/socket.io/socket.io.js"></script>
     <script type="text/javascript" src="/easyrtc/easyrtc.js"></script>
-    <script type="text/javascript" src="/demos/js/prettify/jquery.js"></script>
-    <script	type="text/javascript" src="js/layout.js"></script>
+    <script type="text/javascript" src="../js/jquery-1.10.2.js"></script>
+    <script	type="text/javascript" src="./js/layout.js"></script>
     <script type="text/javascript" src="../js/jquery-ui.js"></script>
     <!-- Personal JS -->
 </head>
 <body>
+	<div id="tool-container">
+		<div class="border">
+			<i class="fa fa-bars"></i>
+		</div>
+		<div class="border">
+			<i class="fa fa-quote-right"></i>
+		</div>
+		<div class="border">
+			<i class="fa fa-pencil"></i>
+		</div>
+	</div>
+	<div id='dialogue'>
+		<span id="final-transcript"></span>
+		<span id="interim-transcript"></span>
+		<i class="fa fa-microphone"></i>
+	</div>
 	<div id='username-container'>
 		<div class="title">Enter Your Display Name</div>
 		<input id="username-input" type="text"></input>
@@ -29,6 +45,7 @@
 
 	<script type="text/javascript" src="js/visual.js"></script>
     <script type="text/javascript" src="js/main.js"></script>
+    <script type="text/javascript" src="js/voice.js"></script>
 
 </body>
 </html>
