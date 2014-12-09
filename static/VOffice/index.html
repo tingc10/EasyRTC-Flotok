@@ -3,16 +3,39 @@
 <head>
 	<!-- Assumes global locations for socket.io.js and easyrtc.js -->
 	<link rel="stylesheet" type="text/css" href="/easyrtc/easyrtc.css" />
-	<link rel="stylesheet" type="text/css" href="css/stylesheet.css" />
 	<link rel="stylesheet" type="text/css" href="font-awesome/css/font-awesome.min.css" />
     <script src="/socket.io/socket.io.js"></script>
     <script type="text/javascript" src="/easyrtc/easyrtc.js"></script>
     <script type="text/javascript" src="../js/jquery-1.10.2.js"></script>
     <script	type="text/javascript" src="./js/layout.js"></script>
     <script type="text/javascript" src="../js/jquery-ui.js"></script>
+    <script src='js/spectrum.js'></script>
+	<link rel='stylesheet' href='js/spectrum.css' />
     <!-- Personal JS -->
+	<link rel="stylesheet" type="text/css" href="css/stylesheet.css" />
+
 </head>
 <body>
+	<div id="whiteboard">
+		<div class="options">
+			<div class="option-container">
+				<i class="fa fa-circle-thin"></i>
+			</div>
+			<div class="option-container">
+				<i class="fa fa-square-o"></i>
+			</div>
+			<div class="option-container">
+				<i class="fa fa-paint-brush"></i>
+			</div>
+			<div class="option-container">
+				<input type='text' id="stroke-color" />
+			</div>
+			<div class="option-container">
+				<input type='text' id="fill-color" />
+				<i class="fa fa-tint"></i>
+			</div>
+		</div>
+	</div>
 	<div id="tool-container">
 		<div class="border">
 			<i class="fa fa-bars"></i>
@@ -42,10 +65,11 @@
 	<div id="caller-container">
 		
 	</div>
-
+	<script type="text/javascript" src="js/raphael-min.js"></script>
 	<script type="text/javascript" src="js/visual.js"></script>
-    <script type="text/javascript" src="js/main.js"></script>
     <script type="text/javascript" src="js/tools.js"></script>
+    <script type="text/javascript" src="js/main.js"></script>
+
 
 </body>
 </html>

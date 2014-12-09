@@ -76,12 +76,18 @@ easyrtc.on("getIceConfig", function(connectionObj, callback) {
 });
 
 // function for dealing with client sequence requests
-var sequenceNum = 0;
+var sequenceNum = 0,
+		elementID = 0;
 var onEasyrtcMsg = function(connectionObj, msg, socketCallback, next){
 //    console.log("Message Received from client.");
     if(msg.msgType == "getSequenceNum") {
         socketCallback({msgType:'returnSessionNum', msgData:sequenceNum}); //nice
         sequenceNum++;
+        next(null);
+        return;
+    } else if(msg.msgType == "getElementID") {
+    		socketCallback({msgType:'returnElementID', msgData:elementID}); //nice
+        elementID++;
         next(null);
         return;
     }

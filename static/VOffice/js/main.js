@@ -24,6 +24,7 @@ function initCall() {
   var connectFailure = function(errMsg){
     console.log("Connection Error: " + errMsg);
   };
+  // initMediaSource called when user allows camera accessibility
   easyrtc.initMediaSource(function(){
     // success callback
     var selfVideo = document.getElementById('self');
@@ -45,7 +46,9 @@ function initCall() {
 
         },1000);
       });
+      centerInElement($("body"),$("#whiteboard"),true,true);
 
+      $("#whiteboard").css("display", "block");
     });
   });
 }
@@ -69,6 +72,7 @@ function roomListener(roomName, otherPeers) {
 
 }
 
+// requests for sequence number and handles next action
 function getSequenceNum(easyrtcid) {
 	easyrtc.sendServerMessage('getSequenceNum', null,
 		function(msgType, msgData ){
@@ -89,6 +93,29 @@ function getSequenceNum(easyrtcid) {
 	);
 }
 
+// gets new Element ID from server to assign order
+function getElementID() {
+  easyrtc.sendServerMessage('getElementID', null,
+    function(msgType, msgData ){
+      console.log("message return success");
+      if(msgData == null){
+        getElementID();
+        return;
+      }
+      currentObject.id = msgData;
+
+      var data = {
+        element   : elementToJSON(currentObject),
+        elementID : msgData,
+        canvasID  : "whiteboard"
+      }
+      broadcastObject(data, "drawElement");
+    },
+    function(errorCode, errorText){
+       console.log("error was " + errorText);
+    }
+  );
+}
 
 function performCall(easyrtcid) {
 	
@@ -216,6 +243,9 @@ easyrtc.setPeerListener( function(easyrtcid, msgType, msgData, targeting){
 				}
 			}
 			break;
+    case "drawElement":
+      addToCanvas(msgData.element,msgData.elementID,msgData.canvasID);
+      break;
 	}
 });
 
@@ -287,7 +317,7 @@ function getUserName(){
       $("#self").parent().find(".display-name").html($(this).val());
 
       $("#tool-container").css('display', 'block');
-      initCall()
+      initCall();
 
     }
   });
@@ -380,19 +410,12 @@ function takeSnapshot(shouldSendAll, easyrtcid){
 
   if(shouldSendAll || easyrtcid != null){
     var data = snapshotCanvas.toDataURL();
-    var dest = {};
+    
     if(easyrtcid != null){
       easyrtc.sendData(easyrtcid, "newSnapshot", data);
     } else {
-      dest.targetRoom = "default";
-      easyrtc.sendPeerMessage(dest, "newSnapshot", data,
-        function(msgType, msgBody){ // success callback
-          // console.log("sent " + msgType);
-        },
-        function(errorCode, errorText){ // error callback
-          console.log("error was " + errorText);
-        }
-      );
+
+      broadcastObject(data, "newSnapshot");
     }
   }
 
@@ -522,5 +545,27 @@ $(function(){
     $(this).css("z-index", "2");
   }});
   $("#username-input").focus();
+  
+  // init color picker
+  $("#stroke-color, #fill-color").spectrum({
+    showAlpha: true,
+    clickoutFiresChange: true,
+    showInitial: true,
+    change: function(color){
+      if($(this).attr('id') == "stroke-color"){
+        strokeColor = "rgba(" + color.toRgb().r + "," + color.toRgb().g
+          + "," + color.toRgb().b + "," + color.toRgb().a + ")";
+      } else {
+        fillColor = "rgba(" + color.toRgb().r + "," + color.toRgb().g
+          + "," + color.toRgb().b + "," + color.toRgb().a + ")";
+      }
+    }
+  });
 
+  // set initial color 
+  var tmpColor = $("#stroke-color").spectrum("get");
+  strokeColor = "rgba(" + tmpColor.toRgb().r + "," + tmpColor.toRgb().g
+          + "," + tmpColor.toRgb().b + "," + tmpColor.toRgb().a + ")";
+  $("#fill-color").spectrum("set", "rgba(0,0,0,0)");
+  fillColor = "rgba(0,0,0,0)";
 });
