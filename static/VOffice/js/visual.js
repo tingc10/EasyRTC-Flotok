@@ -1,9 +1,11 @@
+/******************** GLOBAL DECLARATION **********************/
 window.requestAnimFrame = (function(callback) {
         return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame ||
           function(callback) {
           window.setTimeout(callback, 1000 / 60);
         };
 })();
+
 
 function Bubble(element) {
   this.startTime = 0;
@@ -16,7 +18,8 @@ function Bubble(element) {
 }
 
 var allBubbles = [];
-
+var animateBubbles = true; // boolean to start and stop bubble animation
+/******************* BUBBLE IMPLEMENTATION *********************/
 // updates the bubble position
 Bubble.prototype.floatUp = function(){
   
@@ -59,12 +62,14 @@ Bubble.prototype.floatUp = function(){
 // must be called for forEach where this is the bubble object
 function animateBubble(self){
   var complete = self.floatUp()
-  if(complete){
-    beginBubbleAnimation(self, null);
-  } else {
-    requestAnimFrame(function(){
-      animateBubble(self);
-    });
+  if(animateBubbles){
+    if(complete){
+      beginBubbleAnimation(self, null);
+    } else {
+      requestAnimFrame(function(){
+        animateBubble(self);
+      });
+    }
   }
   
 
@@ -92,7 +97,7 @@ function beginBubbleAnimation(bubble, element){
   animateBubble(bubble);
 }
 
-
+/********************** ANIMATION HELPERS ************************/
 function animateEnterRoom() {
   if(!userEnterAnimating){
     userEnterAnimating = true;
@@ -100,9 +105,27 @@ function animateEnterRoom() {
     // console.log(usersEntering.length);
     return;
   }
+  // pop one element off dom array
   var domElement = usersEntering.shift();
-  console.log(domElement);
+  // get offset for center of screen of browser
   var offset = centerOffset([$("html").width(),$("html").height()], [200,200], true, true);
+  
+
+  animateExpandBubble(domElement, offset, function(){
+    beginBubbleAnimation(null, $(domElement));
+    userEnterAnimating = false;
+
+    if(usersEntering.length > 0) {
+      window.setTimeout(animateEnterRoom,3000);
+    }
+  });
+  
+
+}
+
+
+// offset is the location the domElement will appear
+function animateExpandBubble(domElement, offset, callback){
   $(domElement).css({
     "left"  : offset[0],
     "top" : offset[1] 
@@ -111,17 +134,18 @@ function animateEnterRoom() {
     "margin" : "0",
     "width" : "200px",
     "height" : "200px"
-  }, 1000, function(){
-    beginBubbleAnimation(null, $(domElement));
-    userEnterAnimating = false;
+  }, 1000, callback);
+};
 
-    if(usersEntering.length > 0) {
-      window.setTimeout(animateEnterRoom,3000);
-    }
-  });
-
+function animateCollapseBubble(domElement, callback){
+  $(domElement).animate({
+    "margin" : "100px",
+    "width" : "0",
+    "height" : "0"
+  }, 1000, callback);
 }
 
+/************************** EVENT LISTENERS *******************************/
 $("#tool-container").on("mouseover", function(){
   $("#tool-container .border:first-child ~ .border").css({
     "opacity" : "1",

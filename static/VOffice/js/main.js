@@ -1,7 +1,9 @@
 /*********** GLOBAL ****************/
 //var callAllUsers = true;
-var usersEntering = [];
-var sequenceCompare = [];
+
+
+var usersEntering = []; // queue of users entering the room, gets popped off as user animates
+var sequenceCompare = []; // array storing particular sequence number of occupant with id
 var userEnterAnimating = false;
 // var userEnterEvent = document.createEvent("Event");
 // userEnterEvent.initEvent("userEnterEvent", true, true);
@@ -11,7 +13,8 @@ var userEnterAnimating = false;
 
 
 /*********** Functions for Making Calls ****************/
-
+// function that is called after the user inputs their display name
+// initializes local media stream then sets connection with server
 function initCall() {
   easyrtc.setRoomOccupantListener(roomListener);
   var connectSuccess = function(myId) {
@@ -46,9 +49,9 @@ function initCall() {
 
         },1000);
       });
-      centerInElement($("body"),$("#whiteboard"),true,true);
-
-      $("#whiteboard").css("display", "block");
+      // display white board
+      // centerInElement($("body"),$("#whiteboard"),true,true);
+      // $("#whiteboard").css("display", "block");
     });
   });
 }
@@ -196,14 +199,11 @@ easyrtc.setStreamAcceptor( function(callerEasyrtcid, stream) {
 
 // function that is called when a user exits the room
 easyrtc.setOnStreamClosed( function (callerEasyrtcid) {
-  var id = "#" + callerEasyrtcid;
-  $(id).parent().animate({
-    "margin" : "100px",
-    "width" : "0",
-    "height" : "0"
-  }, 1000,function(){
+  console.log('person leaves ', callerEasyrtcid);
+  var id = "#" + easyrtcid;
+  
+  animateCollapseBubble($(id).parent(), function(){
     easyrtc.setVideoObjectSrc(document.getElementById(callerEasyrtcid), "");
-    document.getElementById(callerEasyrtcid).parentNode.remove();
   });
 
 
@@ -258,7 +258,7 @@ $("#username-container")[0].addEventListener(
   }, false
 );
 
-
+// create new DOM element when a user enters the room
 function setupDOMElement(easyrtcid, stream){
 	var videoContainer = document.createElement('div');
     videoContainer.className = "remote-user video-container";
@@ -286,6 +286,8 @@ function setupDOMElement(easyrtcid, stream){
 	easyrtc.setVideoObjectSrc(video, stream);
 
 }
+
+// initialize new bubble representation of user
 function initUser(easyrtcid, stream){
     animateEnterRoom();
 
@@ -304,7 +306,7 @@ function initUser(easyrtcid, stream){
     }
 };
 
-
+// query for client display name
 function getUserName(){
   centerInElement($("body"),$("#username-container"),true,true);
   $("#username-input").keypress(function(e){
