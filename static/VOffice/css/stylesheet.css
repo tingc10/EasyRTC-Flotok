@@ -3,7 +3,9 @@ html, body {
 	margin: 0;
 	height: 100%;
 	width: 100%;
-	background: linear-gradient(rgba(23, 25, 55, 0.5),rgba(14, 15, 27, 0.8));
+	/*background: linear-gradient(rgba(23, 25, 55, 0.5),rgba(14, 15, 27, 0.8));*/
+	background: linear-gradient(rgba(0, 0, 0, 0.3),rgba(0, 0, 0, 0.3)),url('../img/mountain.jpg');
+	background-size: cover;
 	font-family: Arial;
 	overflow: hidden;
 }
@@ -11,26 +13,34 @@ html, body {
 video {
 	height: 100%;
 	position: relative;
-	left: -33.5px;
+	left: 50%;
+	transform: translate(-50%,0%);
+	-webkit-transform: translate(-50%,0%);
+	-moz-transform: translate(-50%,0%);
 }
 
 /************** ID Elements ******************/
 #username-container {
-	border: 1px solid rgba(0,0,0,.8);
 	width: 300px;
 	text-align: center;
 	padding: 30px;
-	border-radius: 5px;
-	background-color: rgba(240, 240, 240, 0.8);
+	border-radius: 2px;
+	background-color: rgba(0, 0, 0, 0.65);
 	box-shadow: 3px 3px 3px rgba(0,0,0,.2);
-	position: absolute;
 	opacity: 1;
 	-webkit-transition: opacity 1s;
+	position: relative;
+	z-index: 1;
+	top: 50%;
+	left: 50%;
+	color: white;
+	transform: translate(-50%,-50%);
+	-webkit-transform: translate(-50%, -50%);
 }
 
 #self {
 	position: absolute;;
-	left: -33.5px;
+	/*left: -33.5px;*/
 }
 
 #self ~ .fa {
@@ -54,17 +64,33 @@ video {
 	cursor: pointer;
 
 }
+
+#dock-container {
+	position: absolute;
+	height: 100%;
+	width: 150px;
+	padding-left: 30px;
+	background: -webkit-linear-gradient(left, rgba(0,0,0,0) , rgba(0,0,0,.5));
+	right: 0;
+	top: 0;
+	opacity: 0;
+	overflow: hidden;
+	display: none;
+}
 /************** Class Elements *****************/
 
 .title {
-	font-weight: bold;
+	/*font-weight: bold;*/
 
 	margin-bottom: 5px;
 }
 
 .video-container {
-	/*width: 200px;
-	height: 200px;*/
+	width: 200px;
+	height: 200px;
+	/*left: 50%;*/
+	top: 50%;
+	/*transform: translate(-50%,-50%);*/
 	overflow: hidden;
 	border-radius: 150px;
 	z-index: 1;
@@ -89,7 +115,7 @@ video {
 }
 
 .remote-user  {
-	position: absolute;
+	/*position: absolute;*/
 	/*opacity: 0;*/
 }
 
@@ -97,6 +123,8 @@ video {
 #caller-container {
 	position: absolute;
 	top: 0;
+	width: 100%;
+	height: 100%;
 }
 
 .display-name{
@@ -152,7 +180,9 @@ video {
 	opacity: 1;
 }
 
-
+#dock-container .remote-user {
+	position: relative;
+}
 
 #tool-container .border {
 	border: solid;
@@ -283,6 +313,9 @@ video {
 	left: 13px;
 	top: 8px;
 }
+
+
+
 /***************** KEYFRAMES *************************/
 @-webkit-keyframes recording {
 	0% {color: rgba(255,0,0,1);}

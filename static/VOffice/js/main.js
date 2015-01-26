@@ -2,7 +2,7 @@
 //var callAllUsers = true;
 
 
-var usersEntering = []; // queue of users entering the room, gets popped off as user animates
+// var usersEntering = []; // queue of users entering the room, gets popped off as user animates
 var sequenceCompare = []; // array storing particular sequence number of occupant with id
 var userEnterAnimating = false;
 // var userEnterEvent = document.createEvent("Event");
@@ -38,11 +38,10 @@ function initCall() {
       $("#self").parent().animate({
         "margin" : "0",
         "width" : "200px",
-        "height" : "200px",
-        "left" : "-31px",
-        "top" : "-31px"
+        "height" : "200px"
       }, 1000, function(){
         // give ample time to take a good snapshot before connecting with others
+        // one time delay
         setTimeout(function(){
           takeSnapshot(false, null);
           easyrtc.connect("VirtualOffice", connectSuccess, connectFailure);
@@ -120,6 +119,7 @@ function getElementID() {
   );
 }
 
+
 function performCall(easyrtcid) {
 	
 	if(easyrtc.getConnectStatus(easyrtcid) == easyrtc.NOT_CONNECTED){
@@ -149,47 +149,72 @@ function performCall(easyrtcid) {
 // the function that is called when someone calls you
 easyrtc.setStreamAcceptor( function(callerEasyrtcid, stream) {
 	console.log("setting up bubble for " + easyrtc.idToName(callerEasyrtcid));
-	var videoContainer = document.createElement('div');
-    videoContainer.className = "remote-user video-container";
+	
+  // var oscillationWrapper = document.createElement('div');
+  var statusIndicator = document.createElement('div');
+  var videoContainer = document.createElement('div');
+  var displayName = document.createElement('div');
+  var volIndicator = document.createElement('i');
+  var micIndicator = document.createElement('i');
+  var video = document.createElement('video');
 
+  // assigning class names
+  // oscillationWrapper.className = "oscillate-wrapper";
+  statusIndicator.className = "status-indicator";
+  videoContainer.className = "remote-user video-container";
+  displayName.className = "display-name";
+  volIndicator.className = "fa fa-volume-off";
+  micIndicator.className = "fa fa-microphone-slash";
+  video.id = callerEasyrtcid;
 
-    $(videoContainer).append("<div class='display-name'>" +
-                             easyrtc.idToName(callerEasyrtcid)
-                             + "</div><i class='fa fa-volume-off'></i>" +
-                             "<i class='fa fa-microphone-slash'></i>");
-    // create video element
-    var video = document.createElement('video');
-    video.id = callerEasyrtcid;
-    var callerContainer = document.getElementById('caller-container');
-    videoContainer.appendChild(video);
-    callerContainer.appendChild(videoContainer);
-    usersEntering.push(videoContainer);
-    // make sure to pull the current remote
-    // user up front to provide continuous drag
-    $(videoContainer).draggable({
-        start : function(){
-            $(".video-container").css("z-index", "1");
-            $(this).css("z-index", "2");
-        }
-    });
+  // appending elements in between
+  // oscillationWrapper.appendChild(statusIndicator);
+  statusIndicator.appendChild(videoContainer);
+  displayName.innerHTML = easyrtc.idToName(callerEasyrtcid);
+  videoContainer.appendChild(displayName);
+  videoContainer.appendChild(volIndicator);
+  // videoContainer.appendChild(micIndicator);
+  // $(videoContainer).append("<div class='display-name'>" +
+  //                          easyrtc.idToName(callerEasyrtcid)
+  //                          + "</div><i class='fa fa-volume-off'></i>" +
+  //                          "<i class='fa fa-microphone-slash'></i>");
+  var callerContainer;
+  if(animateBubbles)
+    callerContainer = document.getElementById('caller-container');
+  else
+    callerContainer = document.getElementById('dock-container');
+  videoContainer.appendChild(video);
+  callerContainer.appendChild(statusIndicator);
+  // usersEntering.push(videoContainer);
+  // make sure to pull the current remote
+  // user up front to provide continuous drag
+  $(statusIndicator).draggable({
+      start : function(){
+          // $(".video-container").css("z-index", "1");
+          $(this).css("z-index", "2");
+      }
+  });
 	
 	
 	// turn off their audio stream
-    var remoteAudioStream = stream.getAudioTracks()[0];
-    remoteAudioStream.enabled = false;
-    // turn off their video strea
-    var remoteVideoStream = stream.getVideoTracks()[0];
-    remoteVideoStream.enabled = false;
-    
-    // send snapshot to user
-    takeSnapshot(false, callerEasyrtcid);
+  var remoteAudioStream = stream.getAudioTracks()[0];
+  remoteAudioStream.enabled = false;
+  // turn off their video strea
+  var remoteVideoStream = stream.getVideoTracks()[0];
+  remoteVideoStream.enabled = false;
+  
+  // send snapshot to user
+  takeSnapshot(false, callerEasyrtcid);
 
-    // check if user is in do not disturb mode
-    if($("#self").parent().hasClass("busy")){
-        toggleDoNotDisturb(true);
-    }
+  // check if user is in do not disturb mode
+  if($("#self").parent().hasClass("busy")){
+      toggleDoNotDisturb(true);
+  }
 	easyrtc.setVideoObjectSrc(video, stream);
-	animateEnterRoom();
+
+  animateEnterRoom(videoContainer);
+
+
 //    setupDOMElement(callerEasyrtcid, stream);
 //    initUser(callerEasyrtcid, stream);
 
@@ -200,10 +225,17 @@ easyrtc.setStreamAcceptor( function(callerEasyrtcid, stream) {
 // function that is called when a user exits the room
 easyrtc.setOnStreamClosed( function (callerEasyrtcid) {
   console.log('person leaves ', callerEasyrtcid);
-  var id = "#" + easyrtcid;
-  
+  // drop reference to Bubble object by setting object associated to bubble as null
+  allBubbles[callerEasyrtcid] = null;
+  var id = "#" + callerEasyrtcid;
+  var domElement = $(id).parent();
   animateCollapseBubble($(id).parent(), function(){
+    var tmpElement = document.getElementById(callerEasyrtcid).parentNode;
     easyrtc.setVideoObjectSrc(document.getElementById(callerEasyrtcid), "");
+    // setTimeout so animation can complete
+    setTimeout(function(){
+      $(tmpElement).remove();
+    }, 2000);
   });
 
 
@@ -259,33 +291,34 @@ $("#username-container")[0].addEventListener(
 );
 
 // create new DOM element when a user enters the room
-function setupDOMElement(easyrtcid, stream){
-	var videoContainer = document.createElement('div');
-    videoContainer.className = "remote-user video-container";
+// NOT CURRENTLY BEING USED
+// function setupDOMElement(easyrtcid, stream){
+// 	var videoContainer = document.createElement('div');
+//     videoContainer.className = "remote-user video-container";
 
 
-    $(videoContainer).append("<div class='display-name'>" +
-                             easyrtc.idToName(easyrtcid)
-                             + "</div><i class='fa fa-volume-off'></i>" +
-                             "<i class='fa fa-microphone-slash'></i>");
-    // create video element
-    var video = document.createElement('video');
-    video.id = easyrtcid;
-    var callerContainer = document.getElementById('caller-container');
-    videoContainer.appendChild(video);
-    callerContainer.appendChild(videoContainer);
-    usersEntering.push(videoContainer);
-    // make sure to pull the current remote
-    // user up front to provide continuous drag
-    $(videoContainer).draggable({
-        start : function(){
-            $(".video-container").css("z-index", "1");
-            $(this).css("z-index", "2");
-        }
-    });
-	easyrtc.setVideoObjectSrc(video, stream);
+//     $(videoContainer).append("<div class='display-name'>" +
+//                              easyrtc.idToName(easyrtcid)
+//                              + "</div><i class='fa fa-volume-off'></i>" +
+//                              "<i class='fa fa-microphone-slash'></i>");
+//     // create video element
+//     var video = document.createElement('video');
+//     video.id = easyrtcid;
+//     var callerContainer = document.getElementById('caller-container');
+//     videoContainer.appendChild(video);
+//     callerContainer.appendChild(videoContainer);
+//     usersEntering.push(videoContainer);
+//     // make sure to pull the current remote
+//     // user up front to provide continuous drag
+//     $(videoContainer).draggable({
+//         start : function(){
+//             $(".video-container").css("z-index", "1");
+//             $(this).css("z-index", "2");
+//         }
+//     });
+// 	easyrtc.setVideoObjectSrc(video, stream);
 
-}
+// }
 
 // initialize new bubble representation of user
 function initUser(easyrtcid, stream){
@@ -308,7 +341,7 @@ function initUser(easyrtcid, stream){
 
 // query for client display name
 function getUserName(){
-  centerInElement($("body"),$("#username-container"),true,true);
+  // centerInElement($("body"),$("#username-container"),true,true);
   $("#username-input").keypress(function(e){
     if(e.which == 13){
       if(!easyrtc.setUsername($(this).val())){
@@ -323,6 +356,66 @@ function getUserName(){
 
     }
   });
+}
+
+// collapses all bubbles and pins them to the right hand side
+// exceptUsers is an array of users NOT to pin.
+// will also NOT pin own user's bubble
+function pinBubbles(exceptUsers){
+  animateBubbles = false;
+  $("#dock-container").css('display', "block");
+  updateConnection("default", function(easyrtcid, occupantIndex){
+    var id = "#" + easyrtcid;
+    var domElement = $(id).parent();
+    console.log(exceptUsers);
+    if(exceptUsers[easyrtcid] != undefined){
+      return;
+    }
+    // console.log(domElement, "interacting with bubble element");
+    animateCollapseBubble(domElement, function(){
+      // var offsetLeft = $("html").width() - (180);
+      var offsetLeft = 0;
+      var offsetTop = 0;
+      $("#tool-container").animate({'right' : '160px'});
+      $("#dock-container").animate({'opacity' : '1'});
+      // move domElement into dock container
+      setTimeout(function(){
+        domElement.appendTo("#dock-container");
+        
+        animateExpandBubble(domElement, [offsetLeft, offsetTop], null);
+
+      }, 1000);
+    });
+  });
+}
+
+// removes all bubbles from the dock and reanimates the bubbles
+function unpinBubbles(exceptUsers){
+  animateBubbles = true;
+  updateConnection("default", function(easyrtcid, occupantIndex){
+    var id = "#" + easyrtcid;
+    var domElement = $(id).parent();
+    // if(exceptUsers[easyrtcid] == undefined){
+    //   return;
+    // }
+    // console.log(domElement, "interacting with bubble element");
+    animateCollapseBubble(domElement, function(){
+      // var offsetLeft = $("html").width() - (180);
+      var offsetLeft = Math.random()*($("html").width-200);
+      var offsetTop = Math.random()*($("html").width-200);
+      $("#tool-container").animate({'right' : '10px'});
+      $("#dock-container").animate({'opacity' : '0'});
+      $("#dock-container").css('display', "none");
+      setTimeout(function(){
+        domElement.appendTo("#caller-container");
+
+        animateExpandBubble(domElement, [offsetLeft, offsetTop], null);
+        animateBubble(allBubbles[easyrtcid]);
+
+      }, 1000);
+    });
+  });
+
 }
 
 // toggles client with easyrtcid's audio stream on or off
@@ -441,6 +534,91 @@ function updateSnapshot(sender, dataURL) {
   }
 }
 
+// checks connection status of everyone in roomName
+// performs callback function on each of the users
+// callback function takes 2 parameters, easyrtcid of user and order of occupant
+function updateConnection(roomName, callback){
+  var occupantsInRoom = easyrtc.getRoomOccupantsAsArray(roomName);
+  var occupantIndex = 0;
+  for(var i = 0; i < occupantsInRoom.length; i++){
+    // skip checking connection if occupant is self
+    if(occupantsInRoom[i] == easyrtc.myEasyrtcid){
+      continue;
+    }
+    // console.log(occupantsInRoom[i], "connection status",easyrtc.getConnectStatus(occupantsInRoom[i]));
+    
+    if(callback){
+      callback(occupantsInRoom[i], occupantIndex);
+    }
+    occupantIndex++;
+  }
+}
+
+// expands selected user and keeps audio stream on
+function focusOnUser(domElement){
+  var video = $(domElement).find("video");
+  var easyrtcid = video.attr("id");
+  // bring the clicked buble to the top
+  $(".video-container").css("z-index", "1");
+  $(domElement).css("z-index", "2");
+  
+
+  if($(domElement).hasClass('keep-mic')) { // end focus on remote user
+    var tmpArray = [];
+    tmpArray[easyrtcid] = true;
+    unpinBubbles(tmpArray);
+    $(domElement).removeClass('keep-mic');
+    // toggleDoNotDisturb(false);
+    if($("#self").parent().hasClass("busy")){
+      $(domElement).addClass("mute");
+    }
+    $(domElement).animate({
+      "width" : "200px",
+      "height"  : "200px",
+      "margin-right" : "0px",
+      "margin-bottom" : "0px"
+    }, 0, function(){
+      $(domElement).find('video').css("z-index", "0");
+      $(domElement).find(".snapshot").animate({
+        "opacity" : "1"
+      }, 1000, function(){
+        toggleVideoStream(easyrtcid, false);
+
+      });
+    });
+
+
+  } else {
+    var tmpArray = [];
+    tmpArray[easyrtcid] = true;
+    pinBubbles(tmpArray);
+    // start focus on remote user
+    $(domElement).addClass('keep-mic');
+    if($(domElement).hasClass("mute")){
+      $(domElement).removeClass("mute");
+    }
+    // toggleDoNotDisturb(true);
+    toggleVideoStream(easyrtcid, true);
+    var videoContainer = domElement;
+    $(domElement).find(".snapshot").animate({
+      "opacity" : "0"
+    }, 500, function(){
+      $(videoContainer).find('video').css("z-index", "3");
+      $(videoContainer).css({
+        "width" : "500px",
+        "height"  : "500px",
+        "margin-right" : "300px",
+        "margin-bottom" : "3000px"
+
+      }).animate({
+        "left" : "125px",
+        "top" : "125px"
+      },1000);
+    });
+
+  }
+  easyrtc.sendData(easyrtcid, "toggleStayOn",  easyrtc.myEasyrtcid);
+}
 
 /****************** Event Listeners ********************/
 // emits a message to the targeted user to listen to what you have to say
@@ -463,61 +641,7 @@ $(document).on('mouseleave','.remote-user', function(){
 
 // focus in on user
 $(document).on('click','.remote-user', function(){
-  var video = $(this).find("video");
-  var easyrtcid = video.attr("id");
-  // bring the clicked buble to the top
-  $(".video-container").css("z-index", "1");
-  $(this).css("z-index", "2");
-  if($(this).hasClass('keep-mic')) {
-    // end focus on remote user
-    $(this).removeClass('keep-mic');
-    // toggleDoNotDisturb(false);
-    if($("#self").parent().hasClass("busy")){
-      $(this).addClass("mute");
-    }
-    $(this).animate({
-      "width" : "200px",
-      "height"  : "200px",
-      "margin-right" : "0px",
-      "margin-bottom" : "0px"
-    }, 0, function(){
-      $(this).find('video').css("z-index", "0");
-      $(this).find(".snapshot").animate({
-        "opacity" : "1"
-      }, 1000, function(){
-        toggleVideoStream(easyrtcid, false);
-
-      });
-    });
-
-
-  } else {
-    // start focus on remote user
-    $(this).addClass('keep-mic');
-    if($(this).hasClass("mute")){
-      $(this).removeClass("mute");
-    }
-    // toggleDoNotDisturb(true);
-    toggleVideoStream(easyrtcid, true);
-    var videoContainer = this;
-    $(this).find(".snapshot").animate({
-      "opacity" : "0"
-    }, 500, function(){
-      $(videoContainer).find('video').css("z-index", "3");
-      $(videoContainer).css({
-        "width" : "500px",
-        "height"  : "500px",
-        "margin-right" : "300px",
-        "margin-bottom" : "3000px"
-
-      }).animate({
-        "left" : "125px",
-        "top" : "125px"
-      },1000);
-    });
-
-  }
-  easyrtc.sendData(easyrtcid, "toggleStayOn",  easyrtc.myEasyrtcid);
+  focusOnUser(this);
 });
 
 // set do not disturb
@@ -542,8 +666,8 @@ $("#self").parent().click(function(){
 $(function(){
   // easyrtc.enableAudio(false);
   var localUser = getUserName();
-  $(".video-container").draggable({start: function(){
-    $(".video-container").css("z-index", "1");
+  $(".status-indicator").draggable({start: function(){
+    $(".statusIndicator").css("z-index", "1");
     $(this).css("z-index", "2");
   }});
   $("#username-input").focus();

@@ -13,8 +13,7 @@ var http    = require("http"),              // http server core modul,
     CollectionDriver = require('./custom_dependencies/collectionDriver').CollectionDriver,
     FileDriver = require('./custom_dependencies/fileDriver').FileDriver;
 
-log_file = fs.createWriteStream(__dirname + '/debug.log', {flags : 'w'});
-log_stdout = process.stdout;
+
 
 /***************** EXPRESS CONFIGURATIONS *****************/
 // Setup and configure Express http server. Expect a subfolder called "static" to be the web root.
@@ -41,11 +40,13 @@ mongoClient.open(function(err, mongoClient) { //C
   collectionDriver = new CollectionDriver(db); //F
 });
 
-// log server data
-console.log = function(d) { //
-  log_file.write(util.format(d) + '\n');
-  log_stdout.write(util.format(d) + '\n');
-};
+// log server data (might be making server hold unnecessary amounts of data)
+// log_file = fs.createWriteStream(__dirname + '/debug.log', {flags : 'w'});
+// log_stdout = process.stdout;
+// console.log = function(d) { //
+//   log_file.write(util.format(d) + '\n');
+//   log_stdout.write(util.format(d) + '\n');
+// };
 
 /*************** EASYRTC CONFIGURATION *******************/
 // setup TURN server by linking to XIRSYS
@@ -68,6 +69,7 @@ easyrtc.on("getIceConfig", function(connectionObj, callback) {
     function (error, response, body) {
         if (!error && response.statusCode == 200) {
             // body.d.iceServers is where the array of ICE servers lives
+            iceConfig = null;
             iceConfig = body.d.iceServers;  
             console.log(iceConfig);
             callback(null, iceConfig);
@@ -82,11 +84,18 @@ var onEasyrtcMsg = function(connectionObj, msg, socketCallback, next){
 //    console.log("Message Received from client.");
     if(msg.msgType == "getSequenceNum") {
         socketCallback({msgType:'returnSessionNum', msgData:sequenceNum}); //nice
+        if(sequenceNum == undefined || sequenceNum == null || sequenceNum > 9007199254740990){
+        	sequenceNum = 0;
+        }
+
         sequenceNum++;
         next(null);
         return;
     } else if(msg.msgType == "getElementID") {
     		socketCallback({msgType:'returnElementID', msgData:elementID}); //nice
+        if(elementID == undefined || elementID == null || elementID > 9007199254740990){
+        	elementID = 0;
+        }
         elementID++;
         next(null);
         return;

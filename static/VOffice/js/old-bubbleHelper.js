@@ -17,6 +17,7 @@ function Bubble(element) {
   this.linearSpeed = 0;
 }
 
+// stores bubble object in associative array by easyrtcid
 var allBubbles = [];
 var animateBubbles = true; // boolean to start and stop bubble animation
 /******************* BUBBLE IMPLEMENTATION *********************/
@@ -61,7 +62,7 @@ Bubble.prototype.floatUp = function(){
 
 // must be called for forEach where this is the bubble object
 function animateBubble(self){
-  var complete = self.floatUp()
+  var complete = self.floatUp();
   if(animateBubbles){
     if(complete){
       beginBubbleAnimation(self, null);
@@ -98,26 +99,29 @@ function beginBubbleAnimation(bubble, element){
 }
 
 /********************** ANIMATION HELPERS ************************/
-function animateEnterRoom() {
-  if(!userEnterAnimating){
-    userEnterAnimating = true;
-  } else {
-    // console.log(usersEntering.length);
-    return;
-  }
+function animateEnterRoom(domElement) {
+  // if(!userEnterAnimating){
+  //   userEnterAnimating = true;
+  // } else {
+  //   // console.log(usersEntering.length);
+  //   return;
+  // }
   // pop one element off dom array
-  var domElement = usersEntering.shift();
+  // var domElement = usersEntering.shift();
   // get offset for center of screen of browser
-  var offset = centerOffset([$("html").width(),$("html").height()], [200,200], true, true);
-  
-
-  animateExpandBubble(domElement, offset, function(){
+  // var offset = centerOffset([$("html").width(),$("html").height()], [200,200], true, true);
+  var curDOMWidth = 200;
+  var curDOMHeight = 200;
+  var randX = animateBubbles ? Math.random() * ($("html").width() - curDOMWidth) : 0;
+  var randY = animateBubbles ? Math.random() * ($("html").height() - curDOMHeight) : 0;
+  console.log(randX, randY);
+  animateExpandBubble(domElement, [randX, randY], function(){
     beginBubbleAnimation(null, $(domElement));
-    userEnterAnimating = false;
+    // userEnterAnimating = false;
 
-    if(usersEntering.length > 0) {
-      window.setTimeout(animateEnterRoom,3000);
-    }
+    // if(usersEntering.length > 0) {
+    //   window.setTimeout(animateEnterRoom,3000);
+    // }
   });
   
 
@@ -126,11 +130,11 @@ function animateEnterRoom() {
 
 // offset is the location the domElement will appear
 function animateExpandBubble(domElement, offset, callback){
+  console.log('expanding bubble');
   $(domElement).css({
     "left"  : offset[0],
     "top" : offset[1] 
-  });
-  $(domElement).animate({
+  }).stop().animate({
     "margin" : "0",
     "width" : "200px",
     "height" : "200px"
@@ -138,13 +142,50 @@ function animateExpandBubble(domElement, offset, callback){
 };
 
 function animateCollapseBubble(domElement, callback){
-  $(domElement).animate({
+  // stop() used to speed up animation delay
+  $(domElement).stop().animate({
     "margin" : "100px",
     "width" : "0",
     "height" : "0"
   }, 1000, callback);
 }
 
+function scrollOnHover(event){
+  var heightPage = $("html").height();
+  var maxScroll = $("#dock-container")[0].scrollHeight - $("#dock-container").outerHeight();
+  var halfPage = heightPage/2;
+  // find the location in terms of percent relative to half the pagen
+  var moduloY = event.pageY % halfPage;
+  var maxSpeed = 30;
+  var speed = (event.pageY < halfPage) ? maxSpeed*(halfPage-moduloY)/halfPage : maxSpeed*(moduloY)/halfPage;
+  // if cursor is in top half of page, then scroll up
+  var scrollTo;
+  if(event.pageY < halfPage){
+    scrollTo = $("#dock-container").scrollTop() - speed;
+    
+    $("#dock-container").stop();
+    if(scrollTo > 0) {
+      $("#dock-container").animate({
+        scrollTop:scrollTo
+      }, 50);
+    } else {
+      $("#dock-container").animate({
+        scrollTop:0
+      }, 50);
+    }
+  } else {
+    scrollTo = $("#dock-container").scrollTop() + speed;
+    if(scrollTo < maxScroll) {
+      $("#dock-container").animate({
+        scrollTop:scrollTo
+      }, 50);
+    } else {
+      $("#dock-container").animate({
+        scrollTop:maxScroll
+      }, 50);
+    }
+  }
+}
 /************************** EVENT LISTENERS *******************************/
 $("#tool-container").on("mouseover", function(){
   $("#tool-container .border:first-child ~ .border").css({
@@ -159,3 +200,23 @@ $("#tool-container").on("mouseleave", function(){
     "margin-top" : "-46px"
   });
 });
+
+var scrollInterval;
+// scrolls the container at different speeds depending on position of mouse
+// scrolls faster closer to the edge of the page
+$("#dock-container").mouseover(function(event){
+  $(this).mousemove(function(event){
+    clearInterval(scrollInterval);
+    scrollInterval = setInterval(function(){
+      scrollOnHover(event);
+    }, 100);
+  });
+  
+  
+  
+}).mouseleave(function(event){
+  console.log("stop interval");
+  clearInterval(scrollInterval); 
+});
+
+
