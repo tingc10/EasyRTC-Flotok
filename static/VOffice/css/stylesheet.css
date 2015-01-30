@@ -77,6 +77,22 @@ video {
 	overflow: hidden;
 	display: none;
 }
+
+#focused-users {
+	position: absolute;
+	width: 80%;
+	height: 80%;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%,-50%);
+	text-align: center;
+	/*z-index: 30;*/
+
+}
+
+#preview-overlay {
+	position: absolute;
+}
 /************** Class Elements *****************/
 
 .title {
@@ -123,8 +139,10 @@ video {
 #caller-container {
 	position: absolute;
 	top: 0;
-	width: 100%;
-	height: 100%;
+	width: 60%;
+	height: 80%;
+	text-align: center;
+	padding: 10% 20%;
 }
 
 .display-name{
@@ -314,7 +332,11 @@ video {
 	top: 8px;
 }
 
-
+#focused-users .status-indicator {
+	position: relative;
+	display: inline-block;
+	margin: auto;
+}
 
 /***************** KEYFRAMES *************************/
 @-webkit-keyframes recording {

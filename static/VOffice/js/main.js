@@ -11,7 +11,7 @@ var userEnterAnimating = false;
 // document.addEventListener("userEnterEvent", animateEnterRoom,false);
 /*********** Objects *************/
 
-
+// var tmpAudiocheck;
 /*********** Functions for Making Calls ****************/
 // function that is called after the user inputs their display name
 // initializes local media stream then sets connection with server
@@ -160,8 +160,8 @@ easyrtc.setStreamAcceptor( function(callerEasyrtcid, stream) {
 
   // assigning class names
   // oscillationWrapper.className = "oscillate-wrapper";
-  statusIndicator.className = "status-indicator";
-  videoContainer.className = "remote-user video-container";
+  statusIndicator.className = "remote-user status-indicator";
+  videoContainer.className = "video-container";
   displayName.className = "display-name";
   volIndicator.className = "fa fa-volume-off";
   micIndicator.className = "fa fa-microphone-slash";
@@ -173,11 +173,8 @@ easyrtc.setStreamAcceptor( function(callerEasyrtcid, stream) {
   displayName.innerHTML = easyrtc.idToName(callerEasyrtcid);
   videoContainer.appendChild(displayName);
   videoContainer.appendChild(volIndicator);
-  // videoContainer.appendChild(micIndicator);
-  // $(videoContainer).append("<div class='display-name'>" +
-  //                          easyrtc.idToName(callerEasyrtcid)
-  //                          + "</div><i class='fa fa-volume-off'></i>" +
-  //                          "<i class='fa fa-microphone-slash'></i>");
+  videoContainer.appendChild(micIndicator);
+  
   var callerContainer;
   if(animateBubbles)
     callerContainer = document.getElementById('caller-container');
@@ -199,7 +196,7 @@ easyrtc.setStreamAcceptor( function(callerEasyrtcid, stream) {
 	// turn off their audio stream
   var remoteAudioStream = stream.getAudioTracks()[0];
   remoteAudioStream.enabled = false;
-  // turn off their video strea
+  // turn off their video stream
   var remoteVideoStream = stream.getVideoTracks()[0];
   remoteVideoStream.enabled = false;
   
@@ -224,18 +221,22 @@ easyrtc.setStreamAcceptor( function(callerEasyrtcid, stream) {
 
 // function that is called when a user exits the room
 easyrtc.setOnStreamClosed( function (callerEasyrtcid) {
+  var id = "#" + callerEasyrtcid;
+  var domElement = $(id).parent();
+  var tmpElement = document.getElementById(callerEasyrtcid).parentNode.parentNode;
   console.log('person leaves ', callerEasyrtcid);
   // drop reference to Bubble object by setting object associated to bubble as null
   allBubbles[callerEasyrtcid] = null;
-  var id = "#" + callerEasyrtcid;
-  var domElement = $(id).parent();
+  updateStatusAnimation(tmpElement, 'stop');
+  
   animateCollapseBubble($(id).parent(), function(){
-    var tmpElement = document.getElementById(callerEasyrtcid).parentNode;
+    
     easyrtc.setVideoObjectSrc(document.getElementById(callerEasyrtcid), "");
     // setTimeout so animation can complete
     setTimeout(function(){
       $(tmpElement).remove();
-    }, 2000);
+    }, 1000);
+
   });
 
 
@@ -273,7 +274,10 @@ easyrtc.setPeerListener( function(easyrtcid, msgType, msgData, targeting){
 				if(msgData > sequenceCompare[easyrtcid]){
 					performCall(easyrtcid);
 				}
-			}
+			} else {
+        console.log("no sequence number to compare");
+        getSequenceNum(easyrtcid);
+      }
 			break;
     case "drawElement":
       addToCanvas(msgData.element,msgData.elementID,msgData.canvasID);
@@ -422,6 +426,7 @@ function unpinBubbles(exceptUsers){
 function toggleAudioStream(easyrtcid, turnOn) {
   var userDiv = "#" + easyrtcid;
   // make sure the peer's audio stays on
+  var statusIndicator = $(userDiv).parents(".status-indicator");
   var videoContainer = $(userDiv).parent();
   if(videoContainer.hasClass("stayOn")){
     return;
@@ -430,6 +435,7 @@ function toggleAudioStream(easyrtcid, turnOn) {
   var userStream = easyrtc.getRemoteStream(easyrtcid);
   var audioStream = userStream.getAudioTracks()[0];
   if(!muted){
+    // if the turnOn parameter is left blank, simply toggle
     if(turnOn == null || turnOn == undefined){
       audioStream.enabled = !audioStream.enabled;
     } else {
@@ -438,11 +444,34 @@ function toggleAudioStream(easyrtcid, turnOn) {
   } else {
     audioStream.enabled = false;
   }
+  // audioStream.enabled = turnOn;
+  // tmpAudiocheck = audioStream.enabled;
+
+
   // change if audioStream is enabled
   if(audioStream.enabled){
+    // if you are already sending voice to the person, then the call is established
+    if(statusIndicator.hasClass('sending')) {
+      updateStatusAnimation(statusIndicator, 'est-2way');
+      toggleVideoSize(easyrtcid, turnOn);
+      
+    } else {
+      updateStatusAnimation(statusIndicator, 'receive-call');
+    }
+    console.log(statusIndicator);
     $(videoContainer).find('.fa-volume-off').removeClass().addClass('fa fa-volume-up');
   } else {
+    
+    if(statusIndicator.hasClass('connected')){
+      updateStatusAnimation(statusIndicator, 'send-call');
+    } else {
+      updateStatusAnimation(statusIndicator, 'stop');
+
+    }
+    toggleVideoSize(easyrtcid, turnOn);
+    // stopStatusAnimation(statusIndicator);
     $(videoContainer).find('.fa-volume-up').removeClass().addClass('fa fa-volume-off');
+    
   }
 }
 
@@ -554,71 +583,7 @@ function updateConnection(roomName, callback){
   }
 }
 
-// expands selected user and keeps audio stream on
-function focusOnUser(domElement){
-  var video = $(domElement).find("video");
-  var easyrtcid = video.attr("id");
-  // bring the clicked buble to the top
-  $(".video-container").css("z-index", "1");
-  $(domElement).css("z-index", "2");
-  
 
-  if($(domElement).hasClass('keep-mic')) { // end focus on remote user
-    var tmpArray = [];
-    tmpArray[easyrtcid] = true;
-    unpinBubbles(tmpArray);
-    $(domElement).removeClass('keep-mic');
-    // toggleDoNotDisturb(false);
-    if($("#self").parent().hasClass("busy")){
-      $(domElement).addClass("mute");
-    }
-    $(domElement).animate({
-      "width" : "200px",
-      "height"  : "200px",
-      "margin-right" : "0px",
-      "margin-bottom" : "0px"
-    }, 0, function(){
-      $(domElement).find('video').css("z-index", "0");
-      $(domElement).find(".snapshot").animate({
-        "opacity" : "1"
-      }, 1000, function(){
-        toggleVideoStream(easyrtcid, false);
-
-      });
-    });
-
-
-  } else {
-    var tmpArray = [];
-    tmpArray[easyrtcid] = true;
-    pinBubbles(tmpArray);
-    // start focus on remote user
-    $(domElement).addClass('keep-mic');
-    if($(domElement).hasClass("mute")){
-      $(domElement).removeClass("mute");
-    }
-    // toggleDoNotDisturb(true);
-    toggleVideoStream(easyrtcid, true);
-    var videoContainer = domElement;
-    $(domElement).find(".snapshot").animate({
-      "opacity" : "0"
-    }, 500, function(){
-      $(videoContainer).find('video').css("z-index", "3");
-      $(videoContainer).css({
-        "width" : "500px",
-        "height"  : "500px",
-        "margin-right" : "300px",
-        "margin-bottom" : "3000px"
-
-      }).animate({
-        "left" : "125px",
-        "top" : "125px"
-      },1000);
-    });
-
-  }
-  easyrtc.sendData(easyrtcid, "toggleStayOn",  easyrtc.myEasyrtcid);
-}
 
 /****************** Event Listeners ********************/
 // emits a message to the targeted user to listen to what you have to say
@@ -626,7 +591,8 @@ $(document).on('mouseenter','.remote-user', function(){
   var video = $(this).find("video");
   var easyrtcid = video.attr("id");
   $(this).find(".fa-microphone-slash").removeClass().addClass("fa fa-microphone");
-  easyrtc.sendData(easyrtcid, "activateVoice",  easyrtc.myEasyrtcid);
+  
+  // easyrtc.sendData(easyrtcid, "activateVoice",  easyrtc.myEasyrtcid);
 });
 
 // emits a message to the targeted user to stop broadcasting what you have to say
@@ -635,13 +601,80 @@ $(document).on('mouseleave','.remote-user', function(){
   var easyrtcid = video.attr("id");
   if(!$(this).hasClass('keep-mic'))
     $(this).find(".fa-microphone").removeClass().addClass("fa fa-microphone-slash");
-  easyrtc.sendData(easyrtcid, "stopVoice",  easyrtc.myEasyrtcid);
+  // easyrtc.sendData(easyrtcid, "stopVoice",  easyrtc.myEasyrtcid);
 
 });
 
 // focus in on user
 $(document).on('click','.remote-user', function(){
-  focusOnUser(this);
+  var self = this;
+  var videoContainer = $(self).find('.video-container');
+  var video = $(this).find("video");
+  var easyrtcid = video.attr("id");
+  // stopStatusAnimation(self);
+
+  // focusOnUser(this);
+  console.log($(self).hasClass('sending'));
+  if($(self).hasClass('sending') || $(self).hasClass('connected')){   // already connected in some form
+    var wasConnected = $(self).hasClass("connected");
+    updateStatusAnimation(self, 'stop');
+
+    easyrtc.sendData(easyrtcid, "stopVoice",  easyrtc.myEasyrtcid);
+
+    //disconnect connection
+    animateCollapseBubble(videoContainer, function(){
+      // alert("transition complete");
+      
+
+      // setTimeout(function(){
+        var randX = animateBubbles ? Math.random() * ($("html").width() - 200) : 0;
+        var randY = animateBubbles ? Math.random() * ($("html").height() - 200) : 0;
+        $(self).css({
+          "position" : "absolute",
+          "left" : randX,
+          "top" : randY
+
+        });
+        animateExpandBubble(videoContainer, null);
+        if(wasConnected){
+          updateStatusAnimation(self, 'receive-call');
+          toggleVideoSize(easyrtcid, false);
+        }
+      // }, 500);    
+    });
+  } else {
+    var isReceiving = $(self).hasClass("receiving");
+    updateStatusAnimation(self, 'stop');
+    easyrtc.sendData(easyrtcid, "activateVoice",  easyrtc.myEasyrtcid);
+    
+    // send call and start speaking
+    animateCollapseBubble(videoContainer,function(){
+      // alert("transition complete");
+      // $(self).appendTo("#focused-users");
+      
+      
+      
+      // setTimeout(function(){
+        $(self).css({
+          "left" : 0,
+          "top" : 0,
+          "position" : "relative"
+        });
+        animateExpandBubble(videoContainer, null);
+        
+        if(isReceiving){
+          updateStatusAnimation(self,'est-2way');
+          toggleVideoSize(easyrtcid, true);
+        } else {
+          updateStatusAnimation(self,'send-call');
+        }
+        
+      // }, 1000);
+      
+    });
+    
+  }
+    
 });
 
 // set do not disturb
@@ -658,18 +691,28 @@ $("#self").parent().click(function(){
   }
 });
 
-
-
-/****************** Handshake *******************/
+// $('#focused-users').bind("DOMSubtreeModified",function(){
+//   if($(this).children().length == 0) {
+//     $(this).css({
+//       "z-index" : 0
+//     });
+//   } else {
+//     $(this).css({
+//       "z-index" : 30
+//     });
+//   }
+// });
 
 /****************** Document Loaded ********************/
 $(function(){
   // easyrtc.enableAudio(false);
   var localUser = getUserName();
-  $(".status-indicator").draggable({start: function(){
-    $(".statusIndicator").css("z-index", "1");
-    $(this).css("z-index", "2");
-  }});
+  $(".status-indicator").draggable({
+    start: function(){
+      // $(".statusIndicator").css("z-index", "1");
+      $(this).css("z-index", "2");
+    }
+  });
   $("#username-input").focus();
   
   // init color picker

@@ -33,10 +33,14 @@ Bubble.prototype.floatUp = function(){
 
   if((this.y - newY) > -1*this.element.height()) {
     var amplitude = 20;
-    // make sure there media is not passing through
-    if(this.element.find(".fa-microphone").length == 0 &&
-        this.element.find(".fa-volume-up").length == 0){
+    // make sure media is not passing through
+    // console.log(this.element);
+    if(shouldStopFloating(this.element)){
+      this.x = this.element.offset().left;
+      this.y = this.element.offset().top;
+      this.startTime = (new Date()).getTime();
       
+    } else {
       this.y -= newY;
       this.element.css("top", this.y);
       
@@ -45,11 +49,6 @@ Bubble.prototype.floatUp = function(){
       var nextX = amplitude * Math.sin(time * 2 * Math.PI / period) + this.x;
       this.element.css("left", nextX);
       this.recordFreeze = true;
-    } else {
-      this.x = this.element.offset().left;
-      this.y = this.element.offset().top;
-      this.startTime = (new Date()).getTime();
-      
     }
     return false;
     
@@ -59,6 +58,16 @@ Bubble.prototype.floatUp = function(){
   }
 
 };
+
+// checks to see if the element has any classes that should cause the
+// float to stop.
+function shouldStopFloating(element){
+  return (element.hasClass("sending") ||
+        element.hasClass("receiving") ||
+        element.hasClass("connected") ||
+        element.children(".video-container").find(".fa-volume-up").length != 0 ||
+        element.children(".video-container").find(".fa-microphone").length != 0);
+}
 
 // must be called for forEach where this is the bubble object
 function animateBubble(self){
@@ -112,18 +121,16 @@ function animateEnterRoom(domElement) {
   // var offset = centerOffset([$("html").width(),$("html").height()], [200,200], true, true);
   var curDOMWidth = 200;
   var curDOMHeight = 200;
-  // var randX = animateBubbles ? Math.random() * ($("html").width() - curDOMWidth) : 0;
-  // var randY = animateBubbles ? Math.random() * ($("html").height() - curDOMHeight) : 0;
-  
-
+  var randX = animateBubbles ? Math.random() * ($("html").width() - curDOMWidth) : 0;
+  var randY = animateBubbles ? Math.random() * ($("html").height() - curDOMHeight) : 0;
   // console.log(randX, randY);
-  animateExpandBubble(domElement, [0, 0], function(){
-    $(domElement).parent(".oscillate-wrapper").css({
-      "-webkit-animation" : "float-up 15s linear infinite"
-    });
-    console.log($(domElement).parent(".oscillate-wrapper").css('-webkit-animation'));
-
-    // beginBubbleAnimation(null, $(domElement));
+  $(domElement).parent(".status-indicator").css({
+    left: randX,
+    top: randY
+  });
+  animateExpandBubble(domElement, function(){
+    
+    beginBubbleAnimation(null, $(domElement).parent(".status-indicator"));
     // userEnterAnimating = false;
 
     // if(usersEntering.length > 0) {
@@ -134,27 +141,110 @@ function animateEnterRoom(domElement) {
 
 }
 
+function updateStatusAnimation(domElement, type) {
+  $(domElement).removeClass("receiving sending connected");
+  
+  var animation;
+  switch(type){
+    case 'receive-call':
+      $(domElement).addClass("receiving");
+      animation = "receive-call 1.5s ease-out infinite";
+      break;
+    case 'send-call':
+      $(domElement).addClass("sending");
+      animation = "send-call 1.5s ease-out infinite";
+      break;
+    case 'est-2way':
+      $(domElement).addClass("connected");
+      animation = "connected 1.5s ease 1 normal forwards";
+      break;
+    case 'stop':
+      $(domElement).css({
+        "-webkit-animation" : "none"
+      });
+      break;
+    default:
+      console.log("no status update");
+      break;
+  }
+  console.log(animation);
+  $(domElement).css({
+    "-webkit-animation" : animation
+  });
+
+}
+
+// function stopStatusAnimation(domElement) {
+//   $(domElement).removeClass("receiving sending connected");
+//   $(domElement).css({
+//     "-webkit-animation" : "none"
+//   });
+// }
 
 // offset is the location the domElement will appear
-function animateExpandBubble(domElement, offset, callback){
+function animateExpandBubble(domElement, callback){
   console.log('expanding bubble');
+
+  
+  if(callback){
+    $(domElement).on('webkitTransitionEnd', function(event) { 
+      callback();
+      $(this).off('webkitTransitionEnd');
+    });
+  }
+  
   $(domElement).css({
-    "left"  : offset[0],
-    "top" : offset[1] 
-  }).stop().animate({
     "margin" : "0",
     "width" : "200px",
     "height" : "200px"
-  }, 1000, callback);
+  });
+  
 };
 
 function animateCollapseBubble(domElement, callback){
   // stop() used to speed up animation delay
-  $(domElement).stop().animate({
+  if(callback){
+    $(domElement).on('webkitTransitionEnd', function(event) { 
+      callback();
+      $(this).off('webkitTransitionEnd');
+    });
+  }
+  
+  $(domElement).css({
     "margin" : "100px",
     "width" : "0",
     "height" : "0"
-  }, 1000, callback);
+  });
+
+  
+}
+
+function toggleVideoSize(easyrtcid, turnOn){
+  var userDiv = "#" + easyrtcid;
+  var videoContainer = $(userDiv).parent();
+  var statusIndicator = $(userDiv).parents("status-indicator");
+  toggleVideoStream(easyrtcid, turnOn);
+  if(turnOn){
+    
+    videoContainer.css({
+      "width": "600px",
+      "height": "600px",
+      "border-radius": "10px"
+    });
+    $(videoContainer).children("video").css("z-index", 5);
+
+    statusIndicator.css("border-radius", "10px");
+  } else {
+    videoContainer.css({
+      "width": "200px",
+      "height": "200px",
+      "border-radius": "50%"
+
+    });
+    $(videoContainer).children("video").css("z-index", 0);
+    statusIndicator.css("border-radius", "50%");
+
+  }
 }
 
 function scrollOnHover(event){
