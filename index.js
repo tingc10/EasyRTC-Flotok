@@ -82,25 +82,30 @@ var sequenceNum = 0,
 		elementID = 0;
 var onEasyrtcMsg = function(connectionObj, msg, socketCallback, next){
 //    console.log("Message Received from client.");
-    if(msg.msgType == "getSequenceNum") {
+    
+    switch(msg.msgType) {
+      case "getSequenceNum":
         socketCallback({msgType:'returnSessionNum', msgData:sequenceNum}); //nice
         if(sequenceNum == undefined || sequenceNum == null || sequenceNum > 9007199254740990){
-        	sequenceNum = 0;
+          sequenceNum = 0;
         }
 
         sequenceNum++;
         next(null);
-        return;
-    } else if(msg.msgType == "getElementID") {
-    		socketCallback({msgType:'returnElementID', msgData:elementID}); //nice
+        break;
+      case "getElementID":
+        socketCallback({msgType:'returnElementID', msgData:elementID}); //nice
         if(elementID == undefined || elementID == null || elementID > 9007199254740990){
-        	elementID = 0;
+          elementID = 0;
         }
         elementID++;
         next(null);
-        return;
+        break;
+      default:
+        // Send all other message types to the default handler
+        easyrtc.events.emitDefault("easyrtcMsg", connectionObj, msg, socketCallback, next);
     }
-    easyrtc.events.emitDefault("easyrtcMsg", connectionObj, msg, socketCallback, next);
+    
 };
 
 easyrtc.events.on("easyrtcMsg", onEasyrtcMsg);

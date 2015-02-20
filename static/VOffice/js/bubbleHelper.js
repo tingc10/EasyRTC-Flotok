@@ -35,7 +35,7 @@ Bubble.prototype.floatUp = function(){
     var amplitude = 20;
     // make sure media is not passing through
     // console.log(this.element);
-    if(shouldStopFloating(this.element)){
+    if(this.shouldStopFloating()){
       this.x = this.element.offset().left;
       this.y = this.element.offset().top;
       this.startTime = (new Date()).getTime();
@@ -61,12 +61,12 @@ Bubble.prototype.floatUp = function(){
 
 // checks to see if the element has any classes that should cause the
 // float to stop.
-function shouldStopFloating(element){
-  return (element.hasClass("sending") ||
-        element.hasClass("receiving") ||
-        element.hasClass("connected") ||
-        element.children(".video-container").find(".fa-volume-up").length != 0 ||
-        element.children(".video-container").find(".fa-microphone").length != 0);
+Bubble.prototype.shouldStopFloating = function(){
+  return (this.element.hasClass("sending") ||
+        this.element.hasClass("receiving") ||
+        this.element.hasClass("connected") ||
+        this.element.children(".video-container").find(".fa-volume-up").length != 0 ||
+        this.element.children(".video-container").find(".fa-microphone").length != 0);
 }
 
 // must be called for forEach where this is the bubble object
