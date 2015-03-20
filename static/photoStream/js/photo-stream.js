@@ -1,8 +1,10 @@
 (function(){
+  var socket = io.connect('http://162.209.63.24');
   var app = angular.module('photoStream', []);
   var imgContainer = document.getElementById('img-container');
+  
   app.controller('PhotoController', ['$http', '$timeout',function($http, $timeout){
-    var loader = this
+    var loader = this;
     loader.photos = [];
     loader.deleteId = '';
     loader.toastMessage = '';
@@ -10,6 +12,21 @@
       // 
       loader.deleteId = id;
     };
+    socket.on('newImage', function(imageId){
+      $http({
+        method: 'GET',
+        url: '/db/files/' + imageId + '/json',
+        headers: {
+          Accept : "application/json",
+          'Content-Type': "application/json"
+        }
+      }).success(function(data){
+        // console.log(data);
+        loader.photos.push(data);
+      }).error(function(data){
+        console.log('new image could not be loaded', error);
+      });
+    });
     loader.confirmDelete = function(shouldDelete){
       var tmpId = loader.deleteId;
       loader.deleteId = '';
@@ -44,6 +61,7 @@
         'Content-Type': "application/json"
       }
     }).success(function(data){
+      // console.log(data);
       loader.photos = data;
     }).error(function(data){
       alert("Sorry! Something went wrong, could not load images...");

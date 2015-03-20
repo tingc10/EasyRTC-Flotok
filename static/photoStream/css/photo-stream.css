@@ -13,7 +13,9 @@ html, body {
 }
 
 .image-wrapper {
-  width: 60%;
+  max-width: 90vmin;
+  width: 90%;
+  max-height: 90vh;
   text-align: center;
   background: rgba(32, 32, 32, 0.8);
   border-radius: 1%;
@@ -22,6 +24,8 @@ html, body {
   display: inline-block;
   margin: 20px;
   padding: 20px 0;
+  vertical-align: top;
+
 }
 
 .image-wrapper img {
@@ -57,7 +61,8 @@ html, body {
   left: 50%;
   -webkit-transform: translate(-50%,-50%);
   background-color: whitesmoke;
-  padding: 25px;
+  padding: 3vw 0;
+  min-width: 80vw;
   box-shadow: 0 0 10px rgba(0,0,0,.7);
   font-family: Arial;
   text-align: center;
@@ -65,10 +70,10 @@ html, body {
 
 #confirm-delete button{
   position: relative;
-  padding: 4% 15%;
+  padding: 1vw 9vw;
   font-size: 1.5em;
   background-color: rgb(171, 171, 171);
-  margin: 0 3%;
+  margin: 1vw 2vw;
   border: none;
   border-radius: 3%;
   color: white;

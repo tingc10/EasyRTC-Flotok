@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html ng-app="VirtualOffice">
+<head>
+	<!-- Required Libraries -->
+	<link rel="stylesheet" type="text/css" href="/easyrtc/easyrtc.css" />
+	<link rel="stylesheet" type="text/css" href="font-awesome/css/font-awesome.min.css" />
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.12/angular.min.js"></script>
+
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenMax.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript" src="/easyrtc/easyrtc.js"></script>
+    <script type="text/javascript" src="../js/jquery-1.10.2.js"></script>
+    <script type="text/javascript" src="../js/jquery-ui.js"></script>
+
+    <!-- Personal CSS -->
+	<link rel="stylesheet" type="text/css" href="css/stylesheet.css" />
+	<!-- <link rel="stylesheet" type="text/css" href="css/bubbleEffects.css" /> -->
+
+	
+
+</head>
+<body >	
+	<div ng-controller='UsernameController as self' id='username-container'>
+		<div class="title">Enter Your Display Name</div>
+		<input ng-keyup="$event.keyCode == 13 && setUsername()" ng-model="username" id="username-input" type="text"></input>
+	</div>
+	<div class="status-indicator">
+		<div class="video-container">
+			<video id="self" muted></video>
+			<div class="display-name"></div>
+			<canvas id="snapshot"></canvas>
+			<i class="fa fa-minus-circle"></i>
+		</div>
+	</div>
+	<div ng-controller="BubbleController as generator"  id="caller-container">
+		<div class="remote-user status-indicator" ng-mouseover="peer.haltFloat(true)" ng-mouseleave="peer.evalCallState()" ng-mousedown="pendCall(peer)" ng-mousemove="cancelCall(peer)" ng-mouseup="callUser(peer)" ng-repeat="peer in peers track by $index"  ng-init="initBubble(peer)">
+			
+			<div class="video-container" ng-class="{selected: peer.selected}">
+				<video id="{{peer.id}}" ng-show="peer.callStatus == 2 || peer.callStatus == 3"></video>
+				<div class="display-name">{{peer.displayName}}</div>
+				<img class="snapshot" ng-src="{{snapshot}}" ng-repeat="snapshot in peer.bubble.snapshots track by $index" fade-snapshot>
+			</div>
+			<div class="ring 1"></div>
+		    <div class="ring 2"></div>
+		    <div class="ring 3"></div>
+		</div>
+		<div ng-class='{show:selectingGroup != null}' id="group-controls">
+			<div class="confirm-button cancel" ng-click="groupConfirm(false)">
+				<i class="fa fa-times"></i>
+			</div>
+			<div class="confirm-button confirm" ng-click="groupConfirm(true)">
+				<i class="fa fa-check"></i>
+			</div>
+		</div>
+	</div>
+	<div ng-controller="FauxBubbleController as connections" id="dock" ng-mouseenter="dockSize(true)"  ng-mouseleave="dockSize(false)" show-dock>
+		<div class="faux-meta" ng-mouseover="pullUpAll()" ng-mouseleave="pauseAllEval()" ng-click="toggleTransmitAll()">
+			<div id="get-all" class="faux-bubble">
+				<div><i class="fa fa-bullhorn"></i></div>
+			</div>
+			<div class="meta-label" ng-class="{show:showMeta}">Call All</div>
+		</div>
+		<div class="faux-meta" ng-click="createGroup()">
+			<div id="create-group" class="faux-bubble">
+				<div><i class="fa fa-users"></i></div>
+			</div>
+			<div class="meta-label" ng-class="{show:showMeta}">Create Group</div>
+
+		</div>
+		<div class="faux-meta" ng-repeat="peer in peers track by $index" ng-mouseover="pinAndHold(peer)" ng-mouseleave="pauseThenEval(peer)" ng-click="determineClick(peer)" >
+			<div class="faux-bubble" ng-class="{selected:peer.selected}">
+				<div>{{getInitial(peer.displayName)}}</div>
+			</div>
+			<div class="meta-label" ng-class="{show:showMeta}">{{peer.displayName}}</div>
+
+		</div>
+		<div class="faux-meta" ng-repeat="group in allGroups track by $index" ng-mouseover="pinAndHold(group)" ng-mouseleave="pauseThenEval(group)" ng-click="determineClick(group)">
+			<div class="faux-bubble group">
+				<div><i class="fa fa-user"></i>{{group.count}}</div>
+			</div>
+			<div class="meta-label" ng-class="{show:showMeta}">Group of {{group.count}}</div>
+
+		</div>
+	</div>
+
+	<!-- Class Definitions and Dependencies for main.js -->
+
+	<script type="text/javascript" src="js/easyrtc-network.js"></script>
+	<script type="text/javascript" src="js/Bubble.js"></script>
+    <script type="text/javascript" src="js/User.js"></script>
+    <script type="text/javascript" src="js/Group.js"></script>
+
+    <script type="text/javascript" src="js/new-main.js"></script>
+    
+</body>
+</html>

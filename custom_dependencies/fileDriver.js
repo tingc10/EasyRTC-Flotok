@@ -1,9 +1,15 @@
 var ObjectID = require('mongodb').ObjectID, 
-    fs = require('fs'); // fileserver to read and write to disk
- 
+    fs = require('fs'),
+    gm = require('gm'),
+    events = require('events'),
+    util = require('util'); // fileserver to read and write to disk
+
+
 FileDriver = function(db) { //2
+  events.EventEmitter.call(this);
   this.db = db;
 };
+util.inherits(FileDriver, events.EventEmitter);
 
 FileDriver.prototype.getCollection = function(callback) {
   // looks through "files" collection
@@ -85,6 +91,9 @@ FileDriver.prototype.getNewFileId = function(newobj, callback) { //2
 
 // creates a new object in the file collection
 FileDriver.prototype.handleUploadRequest = function(req, res) {
+    var self = this;
+    var phoneId = req.params.phoneId;
+    var shouldAutoOrient = false;
     var ctype = req.get("content-type"); //2
     // tries to guess the files extension based on content-type; ie image/png would have .png
     var ext = ctype.substr(ctype.indexOf('/')+1);
@@ -93,10 +102,15 @@ FileDriver.prototype.handleUploadRequest = function(req, res) {
     } else {
       ext = '';
     }
-    this.getNewFileId({
+    var newObj = {
       'content-type':ctype, //saves the content-type and extension
       'ext':ext
-    }, function(err,id) {
+    };
+    if(phoneId != undefined || phoneId == null){
+      newObj.phoneId = phoneId;
+      shouldAutoOrient = true;
+    }
+    this.getNewFileId(newObj, function(err,id) {
         if (err) { 
           res.send(400, err); 
         } else { 	         
@@ -108,7 +122,19 @@ FileDriver.prototype.handleUploadRequest = function(req, res) {
           req.pipe(writable); // request is a readStream so you can dump into the writeStream of writable
           // callback on readStream's end event occurs when the pipe operation is complete
           req.on('end', function (){
+            
             res.send(201,{'_id':id});
+            // auto orients the photo by rotating the image 90 degrees CW
+            if(shouldAutoOrient){
+              gm(filePath).rotate('black', 90).write(filePath, function (err) {
+                if (!err){ 
+                  self.emit('idReady', id);
+                  console.log(' hooray! ');
+                } else {
+                  console.log(err);
+                }
+              });
+            }
           });               
           writable.on('error', function(err) { //10
             res.send(500,err);

@@ -3,7 +3,7 @@ var http    = require("http"),              // http server core modul,
     express = require("express"),           // web framework external module
     // web socket external module
     io      = require("socket.io"),
-    easyrtc = require("easyrtc");           // EasyRTC external modul,
+    easyrtc = require("easyrtc"),          // EasyRTC external module
     fs = require('fs'),
     util = require('util'),
     request = require('request'),
@@ -12,7 +12,6 @@ var http    = require("http"),              // http server core modul,
     Server = require('mongodb').Server,
     CollectionDriver = require('./custom_dependencies/collectionDriver').CollectionDriver,
     FileDriver = require('./custom_dependencies/fileDriver').FileDriver;
-
 
 
 /***************** EXPRESS CONFIGURATIONS *****************/
@@ -38,6 +37,11 @@ mongoClient.open(function(err, mongoClient) { //C
   var db = mongoClient.db("TestImageDB");  //E
   fileDriver = new FileDriver(db);
   collectionDriver = new CollectionDriver(db); //F
+  // event listener that gets called if an image successfully updates
+  fileDriver.on('idReady', function(id){
+    socketServer.sockets.emit('newImage', id);
+  });
+
 });
 
 // log server data (might be making server hold unnecessary amounts of data)
@@ -109,15 +113,39 @@ var onEasyrtcMsg = function(connectionObj, msg, socketCallback, next){
 };
 
 easyrtc.events.on("easyrtcMsg", onEasyrtcMsg);
+/***************** SERVER LISTEN ******************/
+// Start Express http server on port 8080
+var webServer = http.createServer(app).listen(app.get('port'), function(){
+  console.log('Express server listening on port ' + app.get('port'));
+});
 
-/***************** FILE SERVER **************************/
+// Start Socket.io so it attaches itself to Express server
+var socketServer = io.listen(webServer, {"log level":1, 'destroy buffer size': Infinity});
+//var socketServer = io.listen(webServer, {"log level":1});
+
+/***************** EXPRESS ROUTE CONFIG **************************/
+
+app.get('/photoStream/main.html', function(req, res){
+  res.redirect('/photoStream/index.html');
+});
+
+// upload a file and attach the unique phone identifier to it
+app.post('/db/files/:phoneId', function(req,res) {
+  fileDriver.handleUploadRequest(req,res);
+});
+
 // the "files" collection is treated differently than the generic "/:collection" routing
 app.post('/db/files', function(req,res) {
   fileDriver.handleUploadRequest(req,res);
 });
 
+
+
 app.get('/db/files/:id', function(req, res) {
   fileDriver.handleGet(req,res);
+
+
+  
 });
 
 app.delete('/db/files/:id', function(req, res) {
@@ -125,6 +153,7 @@ app.delete('/db/files/:id', function(req, res) {
 });
 
 app.get('/db/:collection', function(req, res) { //A
+   
    var params = req.params; //B
    collectionDriver.findAll(req.params.collection, function(error, objs) { //C
           if (error) { res.send(400, error); } //D
@@ -139,7 +168,7 @@ app.get('/db/:collection', function(req, res) { //A
     });
 });
  
-app.get('/db/:collection/:entity', function(req, res) { //I
+app.get('/db/:collection/:entity/json', function(req, res) { //I
    var params = req.params;
    var entity = params.entity;
    var collection = params.collection;
@@ -193,17 +222,10 @@ app.delete('/db/:collection/:entity', function(req, res) { //A
 });
 
 
-/***************** SERVER LISTEN AND START ******************/
-// Start Express http server on port 8080
-var webServer = http.createServer(app).listen(app.get('port'), function(){
-  console.log('Express server listening on port ' + app.get('port'));
-});
 
-// Start Socket.io so it attaches itself to Express server
-var socketServer = io.listen(webServer, {"log level":1, 'destroy buffer size': Infinity});
-//var socketServer = io.listen(webServer, {"log level":1});
+/***************** SERVER START ******************/
+
 
 // Make Easyrtc app listen on opened ports
 var rtc = easyrtc.listen(app, socketServer);
-
 
