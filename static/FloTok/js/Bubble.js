@@ -9,26 +9,30 @@ function Bubble(element) {
   this.startTime = 0;
   this.x = 0;
   this.y = 0;
-  this.saveX = 0;
-  this.recordFreeze = true;
-  this.element = element;			// DOM element (.video-container)
+  this.statusIndicator = element[0].querySelector('.status-indicator');			// jquery lite element
+  this.videoContainer = element[0].querySelector('.video-container');
+  this.ring = element[0].querySelector('.ring');
   this.linearSpeed = 0;
   this.shouldFloat = true;
-  this.snapshots = [];
-  this.animation = new TimelineMax();
-
+  this.animation = new TimelineMax({paused: true});
+  this.pinned = false;
 }
 var animateBubbles = true;
+var $html = $("html");
 
-
-Bubble.prototype.enterRoom = function() {
-  var $element = $(this.element);
-  var randX = animateBubbles ? Math.random() * ($html.width() - this.element.offsetWidth) : 0;
-  var randY = animateBubbles ? Math.random() * ($html.height() - $element.height()) : 0;
+Bubble.prototype.enterRoom = function(scope) {
+  // var $element = $(this.videoContainer);
+  
+  var randX = animateBubbles ? Math.random() * ($html.width() - this.statusIndicator.offsetWidth) : 0;
+  var randY = animateBubbles ? Math.random() * ($html.height() - this.statusIndicator.offsetHeight) : 0;
  	var self = this;
-  expandAt(this.element, randX, randY, function(){
-  	self.initFloat(randX, randY);
-  }, null);
+ 	var animateCallback = function(){
+ 		scope.$apply(function(){
+ 		 	self.initFloat(randX, randY);
+ 		});
+ 	};
+  this.expandAt(randX, randY, animateCallback, null);
+  this.playAnimationQueue();
 
   
 
@@ -38,16 +42,36 @@ Bubble.prototype.initFloat = function(x, y){
 	// TODO: Initializes position, speed and start time of bubble
 	//				If x and y have inital positions, set that to the bubble property,
 	//				else set x and y randomly
-  var visibleWidth = $html.width()-this.element.offsetWidth;
+  var visibleWidth = $html.width()-this.videoContainer.offsetWidth;
   this.x = x !== null ? x : Math.random()*visibleWidth;
   this.y = y !== null ? y : $html.height();
   //generates random linear speed from 20-30
   this.linearSpeed = parseInt((Math.random()*10)+20);	
   this.startTime = (new Date()).getTime();
-  this.animateBubble();
+  this.animateFloat();
 }
 
-Bubble.prototype.animateBubble = function(){
+Bubble.prototype.haltFloat = function(shouldStop, x, y){
+	// TODO: sets the shouldFloat variable,
+	//				x and y define a specific start location
+	this.shouldFloat = !shouldStop;
+	if(!shouldStop){
+		// need to begin floating, decide where to start the float from
+		if(x != null && y != null){
+			this.initFloat(x,y);
+		}	else if(this.x == null && this.y == null) {
+			// if no recorded x or y values, then generate new ones
+			this.initFloat();
+		} else {
+			// resume float with values it stopped at
+			this.x = $(this.statusIndicator).offset().left;
+			this.y = $(this.statusIndicator).offset().top;
+			this.initFloat(this.x, this.y);
+		}
+	}
+};
+
+Bubble.prototype.animateFloat = function(){
 	// TODO: checks if the float animation has gone to the top, then resets the float
   
   if(animateBubbles && this.shouldFloat){
@@ -57,7 +81,7 @@ Bubble.prototype.animateBubble = function(){
     } else {
     	var self = this;
       requestAnimFrame(function(){
-        self.animateBubble();
+        self.animateFloat();
       });
     }
   }
@@ -71,239 +95,175 @@ Bubble.prototype.floatUp = function(){
   // update
   var time = (new Date()).getTime() - this.startTime;
   var newY = ((this.linearSpeed)/30).toFixed(2);
-  var $statusIndicator = $(this.element.parentNode);
+  
 
   // check to make sure the bubble isnt off the screen yet 
-  if((this.y - newY) > -1*$statusIndicator.height()) {
+  if((this.y - newY) > -1*this.statusIndicator.offsetHeight) {
     var amplitude = 20;
-
     this.y -= newY;
-    
-    
-    // in ms
-    var period = 3000;
+    var period = 3000;		// in ms
     var nextX = amplitude * Math.sin(time * 2 * Math.PI / period) + this.x;
-    $statusIndicator.css({
-    	"left": nextX,
-    	top: this.y
-    });
+    TweenLite.set(this.statusIndicator, {left: nextX, top: this.y});
 
     return false;
     
   } else {
-
     return true;
   }
-
 };
 
-Bubble.prototype.updateSnapshot = function(dataURL) {
+Bubble.prototype.togglePin = function(pin, scope){
+	// TODO: toggles pinning; if pin -> halt then pin, else if unpin, animate then float
+	if(this.pinned == pin){
+		// if already pinned, no need to pin and vice versa
+		return;
+	}	
+	
+	var bubble = this;
+	if(pin){
+		
+		this.pinned = true;
+		this.x = null;
+		this.y = null;
+		this.collapseExpandAtCenter();
+		
+	} else {
+		var x = Math.random() * ($html.width() - this.statusIndicator.offsetWidth);
+  	var y = Math.random() * ($html.height() - this.statusIndicator.offsetHeight);
+		var pinCallback = function(){
+			scope.$apply(function(){
+				bubble.haltFloat(false, x, y);
+			});
+		}
+		this.pinned = false;
+  	this.collapseExpandAtLocation(x, y, pinCallback, null);
+		
+	}
+};
 
-  this.snapshots.push(dataURL);
-  
-}
+Bubble.prototype.addToAnimationQueue = function(direction, callback){
+  var easeType = Circ.easeOut,
+		  expandTime = 2;
 
-Bubble.prototype.animateRadial = function(direction, callback){
-  var user = this;
-  
-  var easeType;
-  var $statusIndicator = $(user.element.parentNode);
-  var $ringCollection = $statusIndicator.find('.ring');
-  var determineAnimation = function(){
-  	var expandTime;
-  	
-  	var $ring1 = $statusIndicator.find('.ring.1'),
-	  		$ring2 = $statusIndicator.find('.ring.2'),
-	  		$ring3 = $statusIndicator.find('.ring.3');
-	  		
-    user.animation
-    .invalidate()
-    .restart()
-    .clear();
-	  switch(direction){
-	    case 'outward':
-	    easeType = Circ.easeIn;
-	    expandTime = 1;
-	      user.animation
-	      .fromTo($ring3, expandTime, {
-	      	width:0, 
-	      	height:0, 
-	      	ease:Circ.easeIn
-	      }, {
-	      	width:'45vmin', 
-	      	height:'45vmin',
-	      	maxWidth:'225px', 
-	      	maxHeight:'225px',
-	      	ease:easeType
-	      })
-	      .fromTo($ring2, expandTime, {
-	      	width:0, 
-	      	height:0, 
-	      	ease:Circ.easeIn
-	      }, {
-	      	width:'50vmin', 
-	      	height:'50vmin',
-	      	maxWidth:'250px', 
-	      	maxHeight:'250px', 
-	      	ease:easeType
-	      }, "-=0.75")
-	      .fromTo($ring1, expandTime, {
-	      	width:0, 
-	      	height:0, 
-	      	ease:Circ.easeIn
-	      }, {
-	      	width:'55vmin', 
-	      	height:'55vmin',
-	      	maxWidth:'275px', 
-	      	maxHeight:'275px', 
-	      	ease:easeType
-	      }, "-=0.75")
-	      .staggerTo($ringCollection, 1, {
-	      	opacity: 0
-	      }, 0.25)
-	      .repeat(-1);
-	      break;
-	    case 'inward':
-	    	easeType = Circ.easeIn;
-	    	expandTime = 0.25;
-	      user.animation
-	      .fromTo($ring1, expandTime, {
-	      	width:'55vmin', 
-	      	height:'55vmin',
-	      	maxWidth:'275px', 
-	      	maxHeight:'275px', 
-	      	opacity: 0
-	      }, {
-	      	opacity: 0.3,
-	      	ease:easeType
-	      })
-	      .fromTo($ring2, expandTime, {
-	      	width:'50vmin', 
-	      	height:'50vmin',
-	      	maxWidth:'250px', 
-	      	maxHeight:'250px', 
-	      	opacity: 0
-	      }, {
-	      	opacity: 0.3,
-	      	ease:easeType
-	      })
-	      .fromTo($ring3, expandTime, {
-	      	width:'45vmin', 
-	      	height:'45vmin', 
-	      	maxWidth:'225px', 
-	      	maxHeight:'225px',
-	      	opacity: 0
-	      }, {
-	      	opacity: 0.3,
-	      	ease:easeType
-	      })
-	      .staggerTo($ringCollection, 1, {
-	      	width:0, 
-	      	height:0, 
-	      	ease:Circ.easeIn
-	      }, 0.25)
-	      .repeat(-1);
-	      break;
-	    case 'twoway':
-	      // two way call established
-	      easeType = Circ.easeIn;
-	      user.animation
-	      .to(user.element,0.5,{
-	      	borderRadius:'2vmin', 
-	      	ease: easeType
-	      })
-	      .to($ringCollection,0.75, {
-	      	borderRadius:'2vmin', 
-	      	width:'43vmin', 
-	      	height:'43vmin',
-	      	maxWidth: '210px',
-	      	maxHeight: '210px',
-	      	opacity: 0.2
-	      })
-	      .repeat(0);
-	      break;
-	    default:
-	      // return to original state (no call)
-	      easeType = Circ.easeIn;
-	      user.animation
-	      .to(user.element,0.5, {
-		    	borderRadius:'50%', 
-		    	ease:easeType
-		    })
-		    .to($ringCollection,0.5,{
-		    	width: 0,
-		    	height: 0,
-		    	borderRadius:'50%',
-		    	ease: easeType,
-		    	onComplete: callback != null && callback != undefined ? callback : null
-		    }, '-=0.5')
-		    .repeat(0);
-	      break;
-	  }
-    user.animation.play();
-	};
-	  
-	  
-	  
-  if(direction != 'twoway'){
-    // return to original settings
-    user.animation
-    .to(user.element,0.5, {
-    	borderRadius:'50%', 
-    	ease:easeType
-    })
-    .to($ringCollection,0.5,{
-    	borderRadius:'50%',
-    	ease: easeType,
-    	opacity: 0.2,
-    	onComplete:function(){
-      	determineAnimation();
-      }
-    }, '-=0.5')
-    .repeat(0);
-    
-  } else {
-    determineAnimation();
+  switch(direction){
+  	case 'outward':
+  		this.animation
+  		.fromTo(this.ring, expandTime, {
+      	width:0, 
+      	height:0, 
+      	opacity: 0.5
+      }, {
+      	width:'50vmin', 
+      	height:'50vmin',
+      	maxWidth:'250px', 
+      	maxHeight:'250px',
+      	opacity: 0,
+      	ease:easeType,
+      	repeat: -1
+      });
+  		break;
+  	case 'inward':
+  		this.animation
+  		.fromTo(this.ring, expandTime, {
+      	width:'50vmin', 
+      	height:'50vmin',
+      	maxWidth:'250px', 
+      	maxHeight:'250px',
+      	opacity: 0
+      }, {
+      	width:0, 
+      	height:0, 
+      	opacity: 0.5,
+      	ease:easeType,
+      	repeat: -1
+      });
+  		break;
+  	case 'twoway':
+  		this.animation
+      .to(this.videoContainer,0.5,{
+      	borderRadius:'2vmin', 
+      	ease: easeType
+      })
+      .to(this.ring,0.75, {
+      	borderRadius:'2vmin', 
+      	width:'43vmin', 
+      	height:'43vmin',
+      	maxWidth: '210px',
+      	maxHeight: '210px',
+      	opacity: 0.2,
+      	repeat: 0
+      });
+  		break;
+  	default:
+  		this.animation
+      .to(this.videoContainer,0.5, {
+	    	borderRadius:'50%', 
+	    	ease:easeType
+	    })
+	    .to(this.ring,0.5,{
+	    	width: 0,
+	    	height: 0,
+	    	borderRadius:'50%',
+	    	ease: easeType,
+	    	repeat: 0
+	    }, '-=0.5');
+  		break;
   }
+
 };
   
   
 
 
 /************* BUBBLE ANIMATION METHODS *****************/
-function expandAt(target, x, y, callback, paramArray){
+Bubble.prototype.expandAt = function(x, y, callback, paramArray){
 	// TODO: Expand bubble at defined location x and y
 	// REQUIREMENT: target must be the video-container
 	// we want to move the status-indicator of the video indicator
-	TweenMax.set(target.parentNode, {position: 'absolute',left: x, top: y});
-	TweenMax.to(target, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
+	// REQUIRE: CALLBACKS MUST HAVE SCOPE.$APPLY EMBEDED!!! 
+	this.animation
+	.set(this.statusIndicator, {position: 'absolute',left: x, top: y})
+	.to(this.videoContainer, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
 	
 };
-function collapse(target, callback, paramArray){
+Bubble.prototype.collapse = function(callback, paramArray){
 	// TODO: Collapse bubble at current location
-	// REQUIREMENT: target must be container of video element (not the status-indicator)
-	TweenMax.set(target.parentNode, {position: 'absolute'});
-	TweenMax.to(target, .5, {width: 0, height: 0, margin: '20vmin', ease: Power3.easeInOut, onComplete: callback, onCompleteParams: paramArray});
+	// REQUIREMENT: this.videoContainer must be container of video element (not the status-indicator)
+	// REQUIRE: CALLBACKS MUST HAVE SCOPE.$APPLY EMBEDED!!! 
+	this.animation
+	.set(this.statusIndicator, {position: 'absolute'})
+	.to(this.videoContainer, .5, {width: 0, height: 0, margin: '20vmin', ease: Power3.easeInOut, onComplete: callback, onCompleteParams: paramArray});
 
 	
 };
 
-function collapseExpandAtCenter(target, callback, paramArray){
+Bubble.prototype.collapseExpandAtCenter = function(callback, paramArray){
 	// TODO: Collapse then pin to center
-	var t1 = new TimelineLite();
-	t1.set(target.parentNode,{position: 'absolute'})
-	.to(target, .5, {width: 0, height: 0, margin: '20vmin', ease: Power3.easeInOut})
-	.set(target.parentNode, {position: 'relative',left: 0, top: 0, margin: '2vmin'})
-	.to(target, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
-
-}
-
-function collapseExpandAtLocation(target, x, y, callback, paramArray){
-	// TODO: collapse at current location, expand in random location
-	var t1 = new TimelineLite();
+	// REQUIRE: CALLBACKS MUST HAVE SCOPE.$APPLY EMBEDED!!! 
 	
-	t1.to(target, .5, {width: 0, height: 0, margin: '20vmin', ease: Power3.easeInOut})
-	.set(target.parentNode, {position: 'absolute',left: x, top: y, margin: 0})
-	.to(target, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
+	this.animation
+	.set(this.statusIndicator,{position: 'absolute'})
+	.to(this.videoContainer, .5, {width: 0, height: 0, margin: '20vmin', ease: Power3.easeInOut})
+	.set(this.statusIndicator, {position: 'relative',left: 0, top: 0, margin: '2vmin'})
+	.to(this.videoContainer, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
+
 }
 
+Bubble.prototype.collapseExpandAtLocation = function(x, y, callback, paramArray){
+	// TODO: collapse at current location, expand in random location
+	// REQUIRE: CALLBACKS MUST HAVE SCOPE.$APPLY EMBEDED!!! 
+	this.animation
+	.to(this.videoContainer, .5, {width: 0, height: 0, margin: '20vmin', ease: Power3.easeInOut})
+	.set(this.statusIndicator, {position: 'absolute',left: x, top: y, margin: 0})
+	.to(this.videoContainer, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
+}
+
+Bubble.prototype.playAnimationQueue = function(){
+	// TODO: Plays the animation queue after compiling the queue
+	// REQUIRE: queue is actually setup
+	this.animation.play();
+}
+
+Bubble.prototype.resetAnimationQueue = function(){
+	this.animation.clear().eventCallback("onComplete", null);;
+}

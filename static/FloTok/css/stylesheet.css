@@ -22,7 +22,7 @@ video {
 
 /************** ID Elements ******************/
 #username-container {
-	width: 300px;
+
 	text-align: center;
 	padding: 30px;
 	border-radius: 2px;
@@ -30,13 +30,29 @@ video {
 	box-shadow: 3px 3px 3px rgba(0,0,0,.2);
 	opacity: 1;
 	/*-webkit-transition: opacity 1s;*/
-	position: relative;
+	position: absolute;
 	z-index: 1;
 	top: 50%;
 	left: 50%;
 	color: white;
 	transform: translate(-50%,-50%);
 	-webkit-transform: translate(-50%, -50%);
+}
+#username-container input {
+	text-align: center;
+  margin: 1vmin 0;
+  padding: .6vmin 0;
+  background-color: transparent;
+  border: 1px solid white;
+  border-radius: 2px;
+  color: white;
+  font-size: 18px;
+}
+
+#username-container .title{
+	font-size: 16px;
+	text-transform: uppercase;
+	font-weight: bold;
 }
 
 #self {
@@ -111,11 +127,7 @@ video {
 
 /************** Class Elements *****************/
 
-.title {
-	/*font-weight: bold;*/
 
-	margin-bottom: 5px;
-}
 
 .video-container {
 	width: 0;
@@ -170,10 +182,10 @@ video {
 	bottom: 0px;
 	z-index: 10;
 	color: rgba(255,255,255,0.9);
-	font-size: 16px;
+	font-size: 2.5vmin;
 	width: 100%;
 	text-align: center;
-	padding: 15px 0px 38px 0px;
+	padding: 2vmin 0;
 	background: linear-gradient(rgba(0,0,0,0.05),rgba(0, 0, 0, 0.7));
 }
 

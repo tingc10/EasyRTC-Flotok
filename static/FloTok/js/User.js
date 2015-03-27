@@ -1,22 +1,18 @@
 // SUMMARY: Definition for User Class
 // DEPENDENCY: 
-var callStatus = {
-	NONE: 0,
-	CALLTO: 1,
-	CALLFROM: 2,
-	TWOWAY: 3
-};
+
 function User(easyrtcid) {
 	this.id = easyrtcid;
-	this.status = easyrtc.getConnectStatus(easyrtcid);
+	// this.status = easyrtc.getConnectStatus(easyrtcid);
 	this.callStatus = callStatus.NONE;
 	this.displayName = easyrtc.idToName(easyrtcid);
-	this.bubble = null;			
+	// this.bubble = null;			
 	// this.fauxBubble = null;		
 	this.busy = false;			// mutes all incoming calls except for the outgoing ones
 	this.stillInRoom = true;	// used to determine if user left the room
-	this.pendingCall = false;		// used to differentiate between drag and call event
-	this.selected = false;				// flag to determine if user selected for room
+	// this.pendingCall = false;		// used to differentiate between drag and call event
+	// this.selected = false;				// flag to determine if user selected for room
+	// this.snapshots = [];
 }
 
 
@@ -87,37 +83,57 @@ User.prototype.toggleVoiceSocket = function(turnOn){
 		}
 		easyrtc.sendData(this.id, "stopVoice",  easyrtc.myEasyrtcid);
 	}
-	this.evalCallState();
 };
 
-User.prototype.toggleTransmition = function(){
+User.prototype.toggleTransmition = function(turnOn, scope){
 	// TODO: determines if the call is to be turned on or off,
 	//				forms connection if none exists
 	this.updateConnectionStatus();
-	if(this.callStatus == callStatus.NONE || this.callStatus == callStatus.CALLFROM){
-		// Toggle voice transmition from OFF -> ON
-		// call user if they are not connected then set their stream
-		if(this.status == easyrtc.NOT_CONNECTED){
-			var peer = this;
-			this.formConnection(function(accepted, bywho){
-				console.log((accepted?"accepted":"rejected")+ " by " + bywho);
-				peer.toggleVoiceSocket(true);
-			});
-		} else {
-			// enable audio stream, no need for call since user is already connected
-			this.toggleVoiceSocket(true);
+	if(turnOn){
+		// check if they are
+		if(this.callStatus == callStatus.NONE || this.callStatus == callStatus.CALLFROM){
+			// Toggle voice transmition from OFF -> ON
+			// call user if they are not connected then set their stream
+			if(this.status == easyrtc.NOT_CONNECTED){
+				var peer = this;
+				var networkCallback = function(accepted, bywho){
+					scope.$apply(function(){
+						console.log((accepted?"accepted":"rejected")+ " by " + bywho);
+						peer.toggleVoiceSocket(true);
+						peer.evalCallState(scope);
 
+					});
+				};
+				this.formConnection(networkCallback);
+			} else {
+				// enable audio stream, no need for call since user is already connected
+				this.toggleVoiceSocket(true);
+				this.evalCallState(scope);
+
+			}
+
+		} else {
+			console.log(this.displayName + " is already called");
+			return;
 		}
 	} else {
-		// Toggle voice transmition from ON -> OFF
-		if(this.callStatus == callStatus.TWOWAY){
-			this.toggleVoiceSocket(false);
-		} else {
-			// voice is going out, so turning off should just end connection
-			this.endConnection();
+		if(this.callStatus == callStatus.TWOWAY || this.callStatus == callStatus.CALLTO){
+			if(this.callStatus == callStatus.CALLTO){
+				// no two-way, so turning off should just end connection
+				this.endConnection();
+				// no need for evalCallstate here, allow stream closed to call it
+			} else {
+				this.toggleVoiceSocket(false);
+				this.evalCallState(scope);
 
+			}
+		} else {
+			console.log("not transmitting to " + this.displayName + " already");
+			
+			return;
 		}
 	}
+	
 };
 
 User.prototype.toggleAudioStream = function(turnOn) {
@@ -142,11 +158,11 @@ User.prototype.toggleAudioStream = function(turnOn) {
     audioStream.enabled = turnOn;
   }
   this.shouldToggleVideo();
-  this.evalCallState();
 }
 
 User.prototype.haltFloat = function(shouldStop, x, y){
-	// TODO: sets the shouldFloat variable
+	// TODO: sets the shouldFloat variable,
+	//				x and y define a specific start location
 	this.bubble.shouldFloat = !shouldStop;
 	if(!shouldStop){
 		if(x != null && y != null){
@@ -183,101 +199,37 @@ User.prototype.shouldToggleVideo = function(){
 	}
 };
 
-User.prototype.evalCallState = function(callback){
-	// TODO: determine animations and style changes associated with call state
-	if(this.callStatus != callStatus.NONE){
-		// as long as there is any form of transmission, button should be pinned
-		this.togglePinBubble(true);
-	}
+User.prototype.evalCallState = function(scope){
+	// TODO: function called when call status changes,
+	//				returns the animation to play 
+	var animation
 	switch(this.callStatus){
 		case callStatus.NONE:
 			// return element to bubble shape
-			var user = this,
-			unPin = function(){
-				user.togglePinBubble(false);
-			};
-			this.bubble.animateRadial('none', unPin);
-			
+			animation = "none";
 			
 			break;
 		case callStatus.CALLTO:
 			// radial rings outwards
-			this.bubble.animateRadial('outward');
+			animation = "outward";
+
 			break;
 		case callStatus.CALLFROM:
 			// radial rings inwards to convey receive
-			this.bubble.animateRadial('inward');
+			animation = "inward";
+
 			break;
 		case callStatus.TWOWAY:
 			// squared shape for connected
-			this.bubble.animateRadial('twoway');
+			animation = "twoway";
+
 			break;
 	}
+	scope.$broadcast(this.id+"newCallState", animation);
 };
 
 
 
-// User.prototype.animateCallState = function(){
-// 	// TODO: determine animations and style changes associated with call state
-// 	if(this.callStatus != callStatus.NONE){
-// 		// as long as there is any form of transmission, button should be pinned
-// 		this.togglePinBubble(true);
-// 	}
-// 	switch(this.callStatus){
-// 		case callStatus.NONE:
-// 			// return element to bubble shape
-// 			this.togglePinBubble(false);
-// 			break;
-// 		case callStatus.CALLTO:
-// 			// radial rings outwards
-// 			break;
-// 		case callStatus.CALLFROM:
-// 			// radial rings inwards to convey receive
-// 			break;
-// 		case callStatus.TWOWAY:
-// 			// squared shape for connected
-// 			break;
-// 	}
-// }
 
-User.prototype.togglePinBubble = function(pin){
-	// TODO: toggles pinning; if pin -> halt then pin, else if unpin, animate then float
-	var statusIndicatorPosition = $(this.bubble.element.parentNode).css('position');
-	var peer = this;
-	// var floatOnStatus = function(){
-	// 	// TODO: determines if the bubble should float based on the status
-	// 	if(peer.callStatus == callStatus.NONE){
-	// 		peer.haltFloat(false);
-	// 	} else {
-	// 		peer.haltFloat(true);
-	// 	}
-	// };
-	
-	if(pin){
-		
-		peer.haltFloat(true);
-		if(statusIndicatorPosition == 'absolute'){
-			// by setting x and y to null, haltFloat will set new values
-			this.bubble.x = null;
-			this.bubble.y = null;
-			collapseExpandAtCenter(this.bubble.element, null, null);
-		} else {
-			// already pinned
-			TweenMax.set(this.bubble.element.parentNode, {left:0, top:0});
-			console.log('already pinned');
-		}
-	} else {
-		if(statusIndicatorPosition == 'relative'){
-			var x = Math.random() * ($html.width() - this.bubble.element.offsetWidth);
-  		var y = Math.random() * ($html.height() - this.bubble.element.offsetHeight);
-			collapseExpandAtLocation(this.bubble.element, x, y, function(){
-				peer.haltFloat(false, x, y);
-			}, null);
-		} else {
-			// if already unpinned
-			peer.haltFloat(false);
-		}
-	}
-};
 
 
