@@ -1,0 +1,26 @@
+<div class="faux-meta" group-call>
+	<div id="get-all" class="faux-bubble">
+		<div><i class="fa fa-bullhorn"></i></div>
+	</div>
+	<div class="meta-label" ng-class="{show:showMeta}">Call All</div>
+</div>
+
+<!-- <div class="faux-meta" ng-click="createGroup()">
+	<div id="create-group" class="faux-bubble">
+		<div><i class="fa fa-users"></i></div>
+	</div>
+	<div class="meta-label" ng-class="{show:showMeta}">Create Group</div>
+</div> -->
+
+<div class="faux-meta" peer="peer" ng-repeat="peer in allPeers track by peer.id" users-connected>
+	<div class="faux-bubble" ng-class="{selected:peer.selected}">
+		<div>{{getInitial(peer.displayName)}}</div>
+	</div>
+	<div class="meta-label" ng-class="{show:showMeta}">{{peer.displayName}}</div>
+</div>
+<!-- <div class="faux-meta" ng-repeat="group in allGroups track by $index" ng-mouseover="pinAndHold(group)" ng-mouseleave="pauseThenEval(group)" ng-click="determineClick(group)">
+	<div class="faux-bubble group">
+		<div><i class="fa fa-user"></i>{{group.count}}</div>
+	</div>
+	<div class="meta-label" ng-class="{show:showMeta}">Group of {{group.count}}</div>
+</div> -->
