@@ -45,6 +45,7 @@ angular.module('VirtualOffice', [])
   this.peerLength = 0;
   this.allGroups = {};
   this.allPeers = {};
+  this.transmitAll = false;
   this.addPeer = function(easyrtcid){
     this.allPeers[easyrtcid] = new User(easyrtcid);
     this.peerLength++;

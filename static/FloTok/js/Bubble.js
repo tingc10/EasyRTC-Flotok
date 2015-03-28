@@ -29,6 +29,7 @@ Bubble.prototype.enterRoom = function(scope) {
  	var animateCallback = function(){
  		scope.$apply(function(){
  		 	self.initFloat(randX, randY);
+ 		 	
  		});
  	};
   this.expandAt(randX, randY, animateCallback, null);
@@ -174,7 +175,7 @@ Bubble.prototype.addToAnimationQueue = function(direction, callback){
       	width:0, 
       	height:0, 
       	opacity: 0.5,
-      	ease:easeType,
+      	ease:Circ.easeIn,
       	repeat: -1
       });
   		break;
@@ -242,7 +243,7 @@ Bubble.prototype.collapseExpandAtCenter = function(callback, paramArray){
 	// REQUIRE: CALLBACKS MUST HAVE SCOPE.$APPLY EMBEDED!!! 
 	
 	this.animation
-	.set(this.statusIndicator,{position: 'absolute'})
+	.set(this.statusIndicator,{position: 'absolute', zIndex:5})
 	.to(this.videoContainer, .5, {width: 0, height: 0, margin: '20vmin', ease: Power3.easeInOut})
 	.set(this.statusIndicator, {position: 'relative',left: 0, top: 0, margin: '2vmin'})
 	.to(this.videoContainer, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
@@ -254,7 +255,7 @@ Bubble.prototype.collapseExpandAtLocation = function(x, y, callback, paramArray)
 	// REQUIRE: CALLBACKS MUST HAVE SCOPE.$APPLY EMBEDED!!! 
 	this.animation
 	.to(this.videoContainer, .5, {width: 0, height: 0, margin: '20vmin', ease: Power3.easeInOut})
-	.set(this.statusIndicator, {position: 'absolute',left: x, top: y, margin: 0})
+	.set(this.statusIndicator, {position: 'absolute',left: x, top: y, margin: 0, zIndex: 3})
 	.to(this.videoContainer, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
 }
 
@@ -265,5 +266,10 @@ Bubble.prototype.playAnimationQueue = function(){
 }
 
 Bubble.prototype.resetAnimationQueue = function(){
-	this.animation.clear().eventCallback("onComplete", null);;
+	// TODO: clears all previous data
+	// KNOWN ISSUES: ex) if in the middle of pin animation from status bar,
+	//								if the the user makes call, animation will get stuck
+	// TEMP FIX: set progress of previous to end before clearing the data,
+	//						however this makes the animation jump
+	this.animation.progress(1).clear().eventCallback("onComplete", null);;
 }

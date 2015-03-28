@@ -3,6 +3,7 @@
 		<div><i class="fa fa-bullhorn"></i></div>
 	</div>
 	<div class="meta-label" ng-class="{show:showMeta}">Call All</div>
+	<div class="call-status">{{callStatusLabel}}</div>
 </div>
 
 <!-- <div class="faux-meta" ng-click="createGroup()">
@@ -12,11 +13,11 @@
 	<div class="meta-label" ng-class="{show:showMeta}">Create Group</div>
 </div> -->
 
-<div class="faux-meta" peer="peer" ng-repeat="peer in allPeers track by peer.id" users-connected>
+<div class="faux-meta" ng-class="{glow:peer.callStatus != 0}" peer="peer" ng-repeat="peer in allPeers track by peer.id" users-connected>
 	<div class="faux-bubble" ng-class="{selected:peer.selected}">
 		<div>{{getInitial(peer.displayName)}}</div>
 	</div>
-	<div class="meta-label" ng-class="{show:showMeta}">{{peer.displayName}}</div>
+	<div class="meta-label" ng-class="{show:showMeta}">{{peer.callStatusLabel}}</div>
 </div>
 <!-- <div class="faux-meta" ng-repeat="group in allGroups track by $index" ng-mouseover="pinAndHold(group)" ng-mouseleave="pauseThenEval(group)" ng-click="determineClick(group)">
 	<div class="faux-bubble group">

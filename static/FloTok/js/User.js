@@ -118,15 +118,15 @@ User.prototype.toggleTransmition = function(turnOn, scope){
 		}
 	} else {
 		if(this.callStatus == callStatus.TWOWAY || this.callStatus == callStatus.CALLTO){
-			if(this.callStatus == callStatus.CALLTO){
-				// no two-way, so turning off should just end connection
-				this.endConnection();
+			// if(this.callStatus == callStatus.CALLTO){
+			// hang call for either case
+			this.endConnection();
 				// no need for evalCallstate here, allow stream closed to call it
-			} else {
-				this.toggleVoiceSocket(false);
-				this.evalCallState(scope);
+			// } else {
+			// 	this.toggleVoiceSocket(false);
+			// 	this.evalCallState(scope);
 
-			}
+			// }
 		} else {
 			console.log("not transmitting to " + this.displayName + " already");
 			
