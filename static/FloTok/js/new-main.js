@@ -1,3 +1,4 @@
+
 (function(){
 	
 	/************** ANGULAR SETUP *************/
@@ -22,8 +23,11 @@
 							TweenMax.to(element, .75, {
 								opacity:0, 
 								onComplete:function(){
-									scope.$apply(function(){element.remove();});
-									$rootScope.$broadcast('initCall');
+									scope.$apply(function(){
+										element.remove();
+										$rootScope.$broadcast('initCall');
+									});
+									
 								}
 							});
 						}
@@ -32,13 +36,19 @@
 			}
 		}
 	})
-	.controller('StreamController', function($interval, $scope, $rootScope, NetworkData){
+	.controller('StreamController', function($timeout, $interval, $scope, $rootScope, NetworkData){
 		// TODO: Parent Controller
 		$scope.myDisplayName = '';
 		$scope.roomName = "";
 		$scope.allPeers = NetworkData.allPeers;
-		var snapshotInterval = 5000;    // new snapshot in ms
+		var snapshotIntervalTime = 5000;    // new snapshot in ms
 		var preRoomListenerEvents = [];		// takes an array of functions that need to run after peer is setup
+		var runningIntervals = [];
+		var snapshotInterval;
+		var iceConfigInterval;
+		var serverConnected = false;
+		var localStreamEnded = false;
+		var localStreamWatcher;
 		$scope.$watch(function(){
 			return preRoomListenerEvents.length;
 		}, function(){
@@ -47,6 +57,7 @@
 				tmpFn();
 			}
 		});
+		
 
 		var roomListener = function(roomName, otherPeers) {
 	    // TODO: callback for any changes to the number of occupants in room
@@ -76,65 +87,115 @@
 		    
 	    });
 	  };
-	  var checkRoomLength = function(){
-	    var realRoomList = easyrtc.getRoomOccupantsAsArray("default");
-	    if((NetworkData.peerLength+1) != realRoomList.length){
-	    	console.log("incorrect room length!");
-	    	var user;
-	    	var id;
-	    	// reset the peerlength
-	    	NetworkData.peerLength = 0;
-	    	for(var id in NetworkData.allPeers){
-	    		NetworkData.peerLength++;
-	    	}
-	    	for(var i = 0; i < realRoomList.length; i++){
-	    		id = realRoomList[i];
-	    		if(id == easyrtc.myEasyrtcid) continue;
-	    		if((user = NetworkData.allPeers[id]) !== undefined){
-		        user.stillInRoom = true;
-		      }
-	    	}
-	    	// log out anyone who is no longer in the room
-		    for(easyrtcid in NetworkData.allPeers){		      
-		      user = NetworkData.allPeers[easyrtcid];
-		      if(!user.stillInRoom){
-		        console.log(user.displayName + " has left the room");
-		        $scope.$broadcast(user.id+"leaveRoom");
-		        
-		      } else {
-		        // must reset the user's stillInRoom flag
-		        user.stillInRoom = false;
-		      }
-		    }
-	    }
-	  };
-		$scope.$on('initCall', function() {
-	    easyrtc.setRoomOccupantListener(roomListener);
-	    var connectSuccess = function(myId) {
+	  var connectToServer = function(){
+	  	var connectSuccess = function(myId) {
+	      serverConnected = true;
+	      $scope.refreshMessage = "Refresh";
 	      console.log("My easyrtcid is " + myId);
 	      // begin sending snapshots at 
-	      $interval(function(){
+	      snapshotInterval = $interval(function(){
 	        // TODO: take snapshot and check room occupancy to make sure it aligns with allPeers array
 	        $scope.$broadcast('takeSnapshot');
 	        checkRoomLength();
-	      }, snapshotInterval);
+	      }, snapshotIntervalTime);
+	      // Get fresh ice config every 5 minutes
+	      iceConfigInterval = $interval(function(){
+	      	if(serverConnected){
+		      	easyrtc.getFreshIceConfig();
+		      }
+	      }, 300000);
+	      localStreamWatcher = $scope.$watch(function(){
+					return easyrtc.getLocalStream().getVideoTracks()[0].readyState;
+				}, function(newValue, oldValue){
+					if(newValue == "ended"){
+						disconnectFromServer();
+						$scope.$broadcast('clearSelfStream');
+						localStreamEnded = true;
+						alert('Please reinitialize your camera');
+						// deregister watch
+						localStreamWatcher();
+					}
+				});
 	    };
 	    var connectFailure = function(errMsg){
 	      console.log("Connection Error: " + errMsg);
+	      // If connection failed, try to reconnect to server after a 5 seconds
+	      $timeout(function(){
+	      	console.log('Server reconnect failed, reconnecting in 5 seconds...');
+	      	connectToServer();
+	      }, 5000);
 	    };
+	    easyrtc.connect(
+      	$scope.roomName == "" ? "default" : $scope.roomName, 
+      	connectSuccess, 
+      	connectFailure
+      );
+	  };
+	  var disconnectFromServer = function(){
+	  	// TODO: remove intervals then disconnect
+	  	if(snapshotInterval != null || iceConfigInterval != null){
+	  		$interval.cancel(snapshotInterval);
+	  		$interval.cancel(iceConfigInterval);
+	  	}
+	  	easyrtc.disconnect();
+	  	
+	  };
+	  $scope.refreshConnection = function(){
+	  	// TODO: refreshes the current connection by disconnecting then reconnecting
+	  	//				it will also reinitialize local stream
+	  	$scope.refreshMessage = "In Progress";
+	  	disconnectFromServer();
+	  	$timeout(connectToServer, 1000);
+
+	  	
+	  };
+	  var checkRoomLength = function(){
+	    // $scope.$apply(function(){
+		    var realRoomList = easyrtc.getRoomOccupantsAsArray("default");
+		    if((NetworkData.peerLength+1) != realRoomList.length){
+		    	console.log("incorrect room length!");
+		    	var user;
+		    	var id;
+		    	// reset the peerlength
+		    	NetworkData.peerLength = 0;
+		    	for(var id in NetworkData.allPeers){
+		    		NetworkData.peerLength++;
+		    	}
+		    	for(var i = 0; i < realRoomList.length; i++){
+		    		id = realRoomList[i];
+		    		if(id == easyrtc.myEasyrtcid) continue;
+		    		if((user = NetworkData.allPeers[id]) !== undefined){
+			        user.stillInRoom = true;
+			      }
+		    	}
+		    	// log out anyone who is no longer in the room
+			    for(easyrtcid in NetworkData.allPeers){		      
+			      user = NetworkData.allPeers[easyrtcid];
+			      if(!user.stillInRoom){
+			        console.log(user.displayName + " has left the room");
+			        $scope.$broadcast(user.id+"leaveRoom");
+			        
+			      } else {
+			        // must reset the user's stillInRoom flag
+			        user.stillInRoom = false;
+			      }
+			    }
+		    }
+		  // });
+	  };
+		$scope.$on('initCall', function() {
+	    easyrtc.setRoomOccupantListener(roomListener);
+	    
 	    
 	    // initMediaSource called when user allows camera accessibility
 	    easyrtc.initMediaSource(function(){
 	      // success callback
 	      $scope.$broadcast('initSelfVideo');
-	      easyrtc.connect(
-	      	$scope.roomName == "" ? "default" : $scope.roomName, 
-	      	connectSuccess, 
-	      	connectFailure
-	      );
+	      connectToServer();
 	      
 	    });
 	  });
+	  
 
 	  easyrtc.setPeerListener(function(easyrtcid, msgType, msgData, targeting){
 	    // IMPORTANT: peer listener will begin getting data even before room listener is called
@@ -197,7 +258,26 @@
 
 	    });
 	  });
-
+	  easyrtc.setDisconnectListener(function(){
+	  	// TODO: callback for when server gets disconnected
+	  	
+	  	serverConnected = false;
+	  	// do not run reconnection if user's video gets ended
+	  	if(!localStreamEnded){
+	  		console.log("Server disconnected");
+	  	}
+	  });
+	  window.onfocus = function(){
+	  	// TODO: reinitialize local stream and connect to server
+	  	$scope.$apply(function(){
+	  		console.log('Checking local stream')
+	  		if(localStreamEnded && !serverConnected){
+	  			console.log('...local stream was ended, reinitializing');
+	  			localStreamEnded = false;
+	  			$scope.$emit('initCall');
+	  		}
+	  	});
+	  };
 	})
 	.controller('BubbleController', function($scope, $timeout, NetworkData){
 		

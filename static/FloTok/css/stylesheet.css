@@ -112,9 +112,10 @@ video {
 }
 
 #dock {
-	height: 100%;
-	width: 0;
 	top: 0;
+	bottom: 0;
+	width: 0;
+	padding-bottom: 8vmin;
 	position: absolute;
 	background-color: rgba(0, 0, 0, 0.59);
 	right: 0;
@@ -428,7 +429,7 @@ video {
 }
 
 .faux-meta {
-	  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.52);
+	box-shadow: 0 3px 0 rgba(0, 0, 0, 0.52);
   cursor: pointer;
   margin: 1vmin;
   display: block;
@@ -438,6 +439,21 @@ video {
   border-radius: 4vmin;
   white-space: nowrap;
   position: relative;
+}
+
+.faux-meta.refresh {
+	position: absolute;
+	bottom: 0;
+	width: 6.1vmin;
+	-webkit-transition: width 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275);
+}
+
+.faux-meta.refresh.expand{
+	width: initial;
+}
+
+.faux-bubble .fa.in-progress {
+	-webkit-animation: rotate 2s linear infinite;
 }
 
 .faux-meta.glow {
@@ -570,4 +586,9 @@ video {
 	0%{background-color: rgba(5, 155, 5, 0.8); }
 	50%{background-color: rgba(5, 155, 5, 0.4); }
 	100%{background-color: rgba(5, 155, 5, 0.8); }
+}
+
+@-webkit-keyframes rotate {
+	0%{transform: rotate(0deg);}
+	100%{transform: rotate(360deg);}
 }

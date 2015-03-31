@@ -1,9 +1,9 @@
-<div class="faux-meta" group-call>
+<div class="faux-meta" ng-class="{glow:transmitAll}" group-call>
 	<div id="get-all" class="faux-bubble">
 		<div><i class="fa fa-bullhorn"></i></div>
 	</div>
-	<div class="meta-label" ng-class="{show:showMeta}">Call All</div>
-	<div class="call-status">{{callStatusLabel}}</div>
+	<div class="meta-label" ng-class="{show:showMeta}">{{bullhornMessage}}</div>
+	
 </div>
 
 <!-- <div class="faux-meta" ng-click="createGroup()">
@@ -18,6 +18,13 @@
 		<div>{{getInitial(peer.displayName)}}</div>
 	</div>
 	<div class="meta-label" ng-class="{show:showMeta}">{{peer.callStatusLabel}}</div>
+</div>
+
+<div class="faux-meta refresh" ng-class="{expand:showMeta, glow:refreshMessage != 'Refresh'}" ng-click="refreshConnection()">
+	<div class="faux-bubble">
+		<div><i class="fa fa-refresh" ng-class="{'in-progress':refreshMessage != 'Refresh'}"></i></div>
+	</div>
+	<div class="meta-label" ng-class="{show:showMeta}">{{refreshMessage}}</div>
 </div>
 <!-- <div class="faux-meta" ng-repeat="group in allGroups track by $index" ng-mouseover="pinAndHold(group)" ng-mouseleave="pauseThenEval(group)" ng-click="determineClick(group)">
 	<div class="faux-bubble group">

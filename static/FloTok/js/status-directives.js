@@ -148,10 +148,29 @@ angular.module('VirtualOffice')
 			var elapsed = 0;
 			var interval = null;
 			var timeup = false;
+			var determineStatusLabel = function(hover){
+				if(hover){
+					if(NetworkData.transmitAll){
+						scope.bullhornMessage = "End All";
+					} else {
+						scope.bullhornMessage = "Start All";
+
+					}
+				} else {
+					if(NetworkData.transmitAll){	
+						scope.bullhornMessage = "Contacting All";
+					} else {
+						scope.bullhornMessage = "Contact All";
+						
+					}
+				}
+			};
+
 			element.bind('mouseenter', function(){
 				// Pin all people in room after timeup
 				hoverStart = new Date().getTime();
 				elapsed = 0;
+				determineStatusLabel(true);
 				interval = $interval(function(){
 					if(!timeup){
 						// elapsed should be in miliseconds
@@ -174,7 +193,9 @@ angular.module('VirtualOffice')
 						$rootScope.$broadcast(peer+'unpinBubble');
 					}
 				}
-				$interval.cancel(interval);
+				determineStatusLabel(false);
+				if(interval != null)
+					$interval.cancel(interval);
 				timeup = false;
 				elapsed = 0;
 			})
@@ -184,6 +205,13 @@ angular.module('VirtualOffice')
 				for(var peer in scope.allPeers){
 					$rootScope.$broadcast(peer+'forceCall', NetworkData.transmitAll);
 				}
+			});
+
+			scope.$watch(function(){
+				return NetworkData.transmitAll;
+			}, function(newValue, oldValue){
+				scope.transmitAll = newValue;
+				determineStatusLabel(false);
 			});
 		}
 	}

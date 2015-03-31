@@ -5,6 +5,8 @@ window.requestAnimFrame = (function(callback) {
         };
 })();
 
+var videoOffsetHeight;
+
 function Bubble(element) {
   this.startTime = 0;
   this.x = 0;
@@ -23,8 +25,8 @@ var $html = $("html");
 Bubble.prototype.enterRoom = function(scope) {
   // var $element = $(this.videoContainer);
   
-  var randX = animateBubbles ? Math.random() * ($html.width() - this.statusIndicator.offsetWidth) : 0;
-  var randY = animateBubbles ? Math.random() * ($html.height() - this.statusIndicator.offsetHeight) : 0;
+  var randX = animateBubbles ? Math.random() * ($html.width() - videoOffsetHeight) : 0;
+  var randY = animateBubbles ? Math.random() * ($html.height() - videoOffsetHeight) : 0;
  	var self = this;
  	var animateCallback = function(){
  		scope.$apply(function(){
@@ -43,7 +45,7 @@ Bubble.prototype.initFloat = function(x, y){
 	// TODO: Initializes position, speed and start time of bubble
 	//				If x and y have inital positions, set that to the bubble property,
 	//				else set x and y randomly
-  var visibleWidth = $html.width()-this.videoContainer.offsetWidth;
+  var visibleWidth = $html.width()-videoOffsetHeight;
   this.x = x !== null ? x : Math.random()*visibleWidth;
   this.y = y !== null ? y : $html.height();
   //generates random linear speed from 20-30
@@ -99,7 +101,7 @@ Bubble.prototype.floatUp = function(){
   
 
   // check to make sure the bubble isnt off the screen yet 
-  if((this.y - newY) > -1*this.statusIndicator.offsetHeight) {
+  if((this.y - newY) > -1*videoOffsetHeight) {
     var amplitude = 20;
     this.y -= newY;
     var period = 3000;		// in ms
@@ -129,8 +131,8 @@ Bubble.prototype.togglePin = function(pin, scope){
 		this.collapseExpandAtCenter();
 		
 	} else {
-		var x = Math.random() * ($html.width() - this.statusIndicator.offsetWidth);
-  	var y = Math.random() * ($html.height() - this.statusIndicator.offsetHeight);
+		var x = Math.random() * ($html.width() - videoOffsetHeight);
+  	var y = Math.random() * ($html.height() - videoOffsetHeight);
 		var pinCallback = function(){
 			scope.$apply(function(){
 				bubble.haltFloat(false, x, y);

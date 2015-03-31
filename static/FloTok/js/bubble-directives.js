@@ -18,7 +18,7 @@ angular.module('VirtualOffice')
 			scope.$on('takeSnapshot', function(){
 			  // set snapshot canvas width and height to the same as the video element
 			  snapshotCanvas.width = $video[0].offsetWidth;
-			  snapshotCanvas.height = $video[0].offsetHeight;
+			  snapshotCanvas.height = videoOffsetHeight;
 			  var snapshotContext = snapshotCanvas.getContext("2d");
 			  
 			  snapshotContext.drawImage($video[0], 0, 0, snapshotCanvas.width, snapshotCanvas.height);
@@ -30,12 +30,23 @@ angular.module('VirtualOffice')
 			  }
 			  
 			});
+			scope.$watch(function(){
+				return videoContainer.offsetHeight;
+			}, function(newValue, oldValue){
+				videoOffsetHeight = newValue;
+			});
 			scope.$on('initSelfVideo', function(){
 				scope.$apply(function(){
 					easyrtc.setVideoObjectSrc($video[0], easyrtc.getLocalStream());
       		scope.bubble.expandAt(0, 0, null, null);
       		scope.bubble.playAnimationQueue();
       	});
+			});
+			scope.$on('clearSelfStream', function(){
+				// UNDER A $WATCH, therefore $apply is already running
+				// scope.$apply(function(){
+					easyrtc.clearMediaStream($video[0]);
+				// });
 			});
 			scope.$on('setDisplayName', function(e, displayName){
 				var nameDOM = element[0].querySelector('.display-name');
@@ -185,7 +196,7 @@ angular.module('VirtualOffice')
 				// scope.$apply(function(){
 			    scope.peer.callStatus = callStatus.NONE;
 			    scope.peer.evalCallState(scope);
-			    easyrtc.setVideoObjectSrc($video[0], "");
+			    easyrtc.clearMediaStream($video[0]);
 				// });
 			});
 			scope.$on(scope.peer.id+"newCallState", function(e, animation){
@@ -259,16 +270,19 @@ angular.module('VirtualOffice')
   return {
     restrict: 'A',
     link: function(scope, element, attrs) {
+    	var newFade = new TweenMax.to(element,2, {opacity:1, ease: Power3.easeIn});
     	var animationComplete = function(){
       	scope.$apply(function(){
       	// 	//pop off
 	      	if(scope.snapshots.length > 1){
 	      			scope.snapshots.shift();
 	      	}
+	      	newFade.eventCallback('onComplete', null);
+	      	newFade = null;
       	});
       	// scope.$emit('snapshotLoaded');
       };
-      TweenMax.to(element,2, {opacity:1, ease: Power3.easeIn, onComplete:animationComplete});
+      newFade.eventCallback("onComplete", animationComplete);
     }
   } 
 });
