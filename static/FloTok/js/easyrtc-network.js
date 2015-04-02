@@ -38,6 +38,51 @@ var isChrome = !!window.chrome && !isOpera;
 if(!isChrome){
   alert("This app is built for Google Chrome Browser, please switch for the most optimal experience");
 }
+
+function notifyMe(message, userId, scope) {
+  // Let's check if the browser supports notifications
+  var notification = null;
+  if (!("Notification" in window)) {
+    alert("This browser does not support desktop notification");
+    return;
+  }
+
+  // Let's check if the user is okay to get some notification
+  else if (Notification.permission === "granted") {
+    // If it's okay let's create a notification
+    notification = new Notification("Flotok Notification", {body:message});
+    
+  }
+
+  // Otherwise, we need to ask the user for permission
+  else if (Notification.permission !== 'denied') {
+    Notification.requestPermission(function (permission) {
+      // If the user is okay, let's create a notification
+      if (permission === "granted") {
+        notification = new Notification("Flotok Notification", {body:message}); 
+      }
+    });
+  }
+  if(notification != null){
+    // close notification after 5 seconds
+    setTimeout(function(){
+      notification.close();
+    }, 5000);
+    // if scope sent in, that means give ability to call
+    if(userId != null && userId != undefined){
+      notification.onclick = function(){
+        scope.$apply(function(){
+          scope.$broadcast(userId+"performCall");
+          window.focus();
+        });
+      };
+    }
+  }
+
+  // At last, if the user already denied any notification, and you 
+  // want to be respectful there is no need to bother them any more.
+}
+
 /*************** CONNECTION HELPERS **************/
 angular.module('VirtualOffice', [])
 .service('NetworkData', function ($interval){
@@ -46,6 +91,8 @@ angular.module('VirtualOffice', [])
   this.allGroups = {};
   this.allPeers = {};
   this.transmitAll = false;
+  this.snapshotInterval;
+  this.haltInterval;
   this.addPeer = function(easyrtcid){
     this.allPeers[easyrtcid] = new User(easyrtcid);
     this.peerLength++;

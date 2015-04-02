@@ -10,10 +10,41 @@ angular.module('VirtualOffice')
 		link: function(scope, element, attrs){
 			var videoContainer = element[0].querySelector('.video-container');
 			var $video = element.find('video');		// jquery lite
+
 			var snapshotCanvas = element[0].querySelector("#snapshot");
 			scope.bubble = new Bubble(element);
+			scope.hover = false;
+			scope.haltInterval = false;
+			scope.snapshotInterval = 5;
+
+			scope.$watch(function(){
+				return scope.snapshotInterval;
+			}, function(){
+				NetworkData.snapshotInterval = scope.snapshotInterval;
+			});
+
+			scope.$watch(function(){
+				return scope.haltInterval;
+			}, function(){
+
+				NetworkData.haltInterval = scope.haltInterval;
+			});
+
 			$(element).draggable({
 				scroll : false
+			});
+			scope.takeSnapshot = function(){
+				scope.$emit('takeSnapshot');
+			};
+			element.bind('mouseenter', function(){
+				scope.$apply(function(){
+					scope.hover = true;
+				});
+			})
+			.bind('mouseleave', function(){
+				scope.$apply(function(){
+					scope.hover = false;
+				});
 			});
 			scope.$on('takeSnapshot', function(){
 			  // set snapshot canvas width and height to the same as the video element
@@ -40,6 +71,7 @@ angular.module('VirtualOffice')
 					easyrtc.setVideoObjectSrc($video[0], easyrtc.getLocalStream());
       		scope.bubble.expandAt(0, 0, null, null);
       		scope.bubble.playAnimationQueue();
+      		scope.$emit('takeSnapshot');
       	});
 			});
 			scope.$on('clearSelfStream', function(){
@@ -274,8 +306,8 @@ angular.module('VirtualOffice')
     	var animationComplete = function(){
       	scope.$apply(function(){
       	// 	//pop off
-	      	if(scope.snapshots.length > 1){
-	      			scope.snapshots.shift();
+	      	while(scope.snapshots.length > 1){
+	      		scope.snapshots.shift();
 	      	}
 	      	newFade.eventCallback('onComplete', null);
 	      	newFade = null;

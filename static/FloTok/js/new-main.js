@@ -41,14 +41,22 @@
 		$scope.myDisplayName = '';
 		$scope.roomName = "";
 		$scope.allPeers = NetworkData.allPeers;
-		var snapshotIntervalTime = 5000;    // new snapshot in ms
+		
 		var preRoomListenerEvents = [];		// takes an array of functions that need to run after peer is setup
-		var runningIntervals = [];
-		var snapshotInterval;
-		var iceConfigInterval;
+		// var runningIntervals = [];
+		var snapshotPromise = null;
+		var iceConfigPromise = null;
 		var serverConnected = false;
 		var localStreamEnded = false;
-		var localStreamWatcher;
+		var localStreamWatcher = null;
+		
+		var startSnapshotInterval = function(){
+			snapshotPromise = $interval(function(){
+        // TODO: take snapshot and check room occupancy to make sure it aligns with allPeers array
+        $scope.$broadcast('takeSnapshot');
+      }, NetworkData.snapshotInterval*1000);
+		};
+
 		$scope.$watch(function(){
 			return preRoomListenerEvents.length;
 		}, function(){
@@ -57,7 +65,46 @@
 				tmpFn();
 			}
 		});
-		
+		$scope.$watch(function(){
+			return NetworkData.snapshotInterval;
+		}, function(){
+			if(snapshotPromise != null){
+				$interval.cancel(snapshotPromise);
+				snapshotPromise = null;
+			}
+			if(!NetworkData.haltInterval){
+				startSnapshotInterval();
+			}
+		}, true);
+
+		$scope.$watch(function(){
+			return NetworkData.haltInterval;
+		}, function(newValue, oldValue){
+			if(snapshotPromise != null){
+				$interval.cancel(snapshotPromise);
+				snapshotPromise = null;
+			}
+			// if haltInterval is false and connected start sending snapshots again
+			if(!newValue){
+				startSnapshotInterval();
+			}
+		});
+
+		var killIntervals = function(){
+			// TODO: cancels all actively running intervals
+			// while(runningIntervals.length > 0){
+			// 	console.log("killing an interval...");
+			// 	$interval.cancel(runningIntervals.shift());
+			// }
+			if(snapshotPromise != null){
+				$interval.cancel(snapshotPromise);
+				snapshotPromise = null;
+			}
+			if(iceConfigPromise != null){
+				$interval.cancel(iceConfigPromise);
+				iceConfigPromise = null;
+			}
+		};
 
 		var roomListener = function(roomName, otherPeers) {
 	    // TODO: callback for any changes to the number of occupants in room
@@ -93,17 +140,21 @@
 	      $scope.refreshMessage = "Refresh";
 	      console.log("My easyrtcid is " + myId);
 	      // begin sending snapshots at 
-	      snapshotInterval = $interval(function(){
-	        // TODO: take snapshot and check room occupancy to make sure it aligns with allPeers array
-	        $scope.$broadcast('takeSnapshot');
-	        checkRoomLength();
-	      }, snapshotIntervalTime);
+	      
+	      killIntervals();
+	      // only create snapshot interval is haltInterval is false
+	      if(!NetworkData.haltInterval){
+		      startSnapshotInterval();
+		    }
 	      // Get fresh ice config every 5 minutes
-	      iceConfigInterval = $interval(function(){
+	      iceConfigPromise = $interval(function(){
 	      	if(serverConnected){
 		      	easyrtc.getFreshIceConfig();
+		      	checkRoomLength();
 		      }
 	      }, 300000);
+
+	     	
 	      localStreamWatcher = $scope.$watch(function(){
 					return easyrtc.getLocalStream().getVideoTracks()[0].readyState;
 				}, function(newValue, oldValue){
@@ -116,6 +167,7 @@
 						localStreamWatcher();
 					}
 				});
+		    
 	    };
 	    var connectFailure = function(errMsg){
 	      console.log("Connection Error: " + errMsg);
@@ -133,10 +185,6 @@
 	  };
 	  var disconnectFromServer = function(){
 	  	// TODO: remove intervals then disconnect
-	  	if(snapshotInterval != null || iceConfigInterval != null){
-	  		$interval.cancel(snapshotInterval);
-	  		$interval.cancel(iceConfigInterval);
-	  	}
 	  	easyrtc.disconnect();
 	  	
 	  };
@@ -184,6 +232,8 @@
 		  // });
 	  };
 		$scope.$on('initCall', function() {
+			// check notification permission and enable if not enabled
+	    notifyMe("You will receive a notification when someone is trying to contact you");
 	    easyrtc.setRoomOccupantListener(roomListener);
 	    
 	    
@@ -260,12 +310,15 @@
 	  });
 	  easyrtc.setDisconnectListener(function(){
 	  	// TODO: callback for when server gets disconnected
-	  	
-	  	serverConnected = false;
-	  	// do not run reconnection if user's video gets ended
-	  	if(!localStreamEnded){
-	  		console.log("Server disconnected");
-	  	}
+		  $scope.$apply(function(){
+		  	killIntervals();
+		  	serverConnected = false;
+
+		  	// do not run reconnection if user's video gets ended
+		  	if(!localStreamEnded){
+		  		console.log("Server disconnected");
+		  	}
+	  	});
 	  });
 	  window.onfocus = function(){
 	  	// TODO: reinitialize local stream and connect to server

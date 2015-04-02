@@ -1,8 +1,17 @@
-<div class="status-indicator" style="z-index:5">
+<div class="status-indicator self" style="z-index:5">
 	<div class="video-container">
 		<video id="self" muted></video>
 		<div class="display-name"></div>
-		<canvas id="snapshot"></canvas>
+		<canvas id="snapshot" ng-class="{show:hover}"></canvas>
+		<div id="snapshot-options" ng-class="{show:hover}">
+			<div class="interval-toggle">
+				<input type="checkbox" ng-model='haltInterval'></input><span ng-click="haltInterval = !haltInterval">Halt Updates</span>
+			</div>
+			<div class="interval" ng-show="!haltInterval">
+				<input type="number" min="5" ng-model='snapshotInterval'></input> sec(s)
+			</div>
+			<i class="fa fa-camera" title="Take Snapshot" ng-click="takeSnapshot()"></i>
+		</div>
 		<!-- <i class="fa fa-minus-circle"></i> -->
 	</div>
 </div>

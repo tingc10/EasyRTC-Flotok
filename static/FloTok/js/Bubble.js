@@ -224,9 +224,16 @@ Bubble.prototype.expandAt = function(x, y, callback, paramArray){
 	// REQUIREMENT: target must be the video-container
 	// we want to move the status-indicator of the video indicator
 	// REQUIRE: CALLBACKS MUST HAVE SCOPE.$APPLY EMBEDED!!! 
-	this.animation
-	.set(this.statusIndicator, {position: 'absolute',left: x, top: y})
-	.to(this.videoContainer, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
+	if(animateBubbles){
+    this.animation
+    .set(this.statusIndicator, {position: 'absolute',left: x, top: y})
+    .to(this.videoContainer, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
+  } else {
+    this.animation
+    .set(this.statusIndicator, {position: 'relative',left: x, top: y})
+    .to(this.videoContainer, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
+  }
+  
 	
 };
 Bubble.prototype.collapse = function(callback, paramArray){

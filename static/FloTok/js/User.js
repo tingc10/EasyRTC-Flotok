@@ -216,6 +216,8 @@ User.prototype.evalCallState = function(scope){
 			break;
 		case callStatus.CALLFROM:
 			// radial rings inwards to convey receive
+		  notifyMe(this.displayName + " is trying to reach you. Click here to connect.", this.id, scope);
+
 			animation = "inward";
 
 			break;
