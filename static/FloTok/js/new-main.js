@@ -24,8 +24,12 @@
 								opacity:0, 
 								onComplete:function(){
 									scope.$apply(function(){
+										if($scope.roomName == ""){
+											$scope.roomName = "default";
+										}
 										element.remove();
-										$rootScope.$broadcast('initCall');
+										$rootScope.$broadcast('initStream');
+
 									});
 									
 								}
@@ -36,13 +40,27 @@
 			}
 		}
 	})
+	.directive('imageLoaded', function(){
+		return {
+			restrict: 'A',
+			link: function(scope, element, attrs){
+				element.bind('load', function(){
+					console.log('image loaded');
+					TweenMax.to(element, 1, {opacity: 1});
+				});
+			}
+		}
+	})
 	.controller('StreamController', function($timeout, $interval, $scope, $rootScope, NetworkData){
 		// TODO: Parent Controller
 		$scope.myDisplayName = '';
 		$scope.roomName = "";
 		$scope.allPeers = NetworkData.allPeers;
-		
+		$scope.roomParticipants = NetworkData.roomParticipants;
+		$scope.connectedToRoom = null;
 		var preRoomListenerEvents = [];		// takes an array of functions that need to run after peer is setup
+		// do not create users when 
+		var knownInvalidIds = [];
 		// var runningIntervals = [];
 		var snapshotPromise = null;
 		var iceConfigPromise = null;
@@ -56,7 +74,21 @@
         $scope.$broadcast('takeSnapshot');
       }, NetworkData.snapshotInterval*1000);
 		};
-
+		var killIntervals = function(){
+			// TODO: cancels all actively running intervals
+			// while(runningIntervals.length > 0){
+			// 	console.log("killing an interval...");
+			// 	$interval.cancel(runningIntervals.shift());
+			// }
+			if(snapshotPromise != null){
+				$interval.cancel(snapshotPromise);
+				snapshotPromise = null;
+			}
+			if(iceConfigPromise != null){
+				$interval.cancel(iceConfigPromise);
+				iceConfigPromise = null;
+			}
+		};
 		$scope.$watch(function(){
 			return preRoomListenerEvents.length;
 		}, function(){
@@ -90,47 +122,74 @@
 			}
 		});
 
-		var killIntervals = function(){
-			// TODO: cancels all actively running intervals
-			// while(runningIntervals.length > 0){
-			// 	console.log("killing an interval...");
-			// 	$interval.cancel(runningIntervals.shift());
-			// }
-			if(snapshotPromise != null){
-				$interval.cancel(snapshotPromise);
-				snapshotPromise = null;
-			}
-			if(iceConfigPromise != null){
-				$interval.cancel(iceConfigPromise);
-				iceConfigPromise = null;
-			}
-		};
+		
 
 		var roomListener = function(roomName, otherPeers) {
 	    // TODO: callback for any changes to the number of occupants in room
 		  $scope.$apply(function(){
+		    var totalPeers = 0;
+		    var callbacksComplete = 0;
 		    var user;
 		    var easyrtcid;
+		    var bootUsers = function(){
+		    	// log out anyone who is no longer in the room
+		    	// called after all callbacks are complete
+					var tmp;
+		    	console.log('checking for tmps to boot');
+			    for(easyrtcid in NetworkData.allPeers){		      
+			      tmp = NetworkData.allPeers[easyrtcid];
+			      if(!tmp.stillInRoom){
+			        console.log(tmp.displayName + " has left the room");
+			        $scope.$broadcast(tmp.id+"leaveRoom");
+			        
+			      } else {
+			        // must reset the tmp's stillInRoom flag
+			        tmp.stillInRoom = false;
+			      }
+			    }
+			  };
+			  for(easyrtcid in otherPeers){
+			  	// do a quick count, this function can't be combined with the bottom loop
+			  	// because the callbacks rely on totalPeers number which may change when
+			  	// callback returns
+			  	totalPeers++;
+			  }
 		    for(easyrtcid in otherPeers) {
 		      console.log(easyrtcid + " entered the room");
-		      if((user = NetworkData.allPeers[easyrtcid]) === undefined){
-		      	NetworkData.addPeer(easyrtcid);
-		      } else {
-		        user.stillInRoom = true;
-		      }
+		      var tmp = easyrtcid.valueOf();
+		      (function(id){
+			      easyrtc.sendPeerMessage(id, 'check_channel', null,
+	            function(msgType, msgBody) {
+	            	
+	              console.log(id + " channel work");
+	            	if((user = NetworkData.allPeers[id]) === undefined){
+					      	NetworkData.addPeer(id);
+					      } else {
+					        user.stillInRoom = true;
+					      }
+					      $scope.$apply(function(){
+					      	callbacksComplete++;
+					      	if(callbacksComplete == totalPeers){
+					      		bootUsers();
+					      	}
+					      });
+					      
+	            },
+	            function(errorCode, errorText) {
+	               
+	              console.log("channel failed " + errorText);
+	              $scope.$apply(function(){
+					      	callbacksComplete++;
+					      	if(callbacksComplete == totalPeers){
+					      		bootUsers();
+					      	}
+					      });
+	            }
+	          );
+	        })(easyrtcid);
+		      
 		    }
-		    // log out anyone who is no longer in the room
-		    for(easyrtcid in NetworkData.allPeers){		      
-		      user = NetworkData.allPeers[easyrtcid];
-		      if(!user.stillInRoom){
-		        console.log(user.displayName + " has left the room");
-		        $scope.$broadcast(user.id+"leaveRoom");
-		        
-		      } else {
-		        // must reset the user's stillInRoom flag
-		        user.stillInRoom = false;
-		      }
-		    }
+		    
 		    
 	    });
 	  };
@@ -138,6 +197,7 @@
 	  	var connectSuccess = function(myId) {
 	      serverConnected = true;
 	      $scope.refreshMessage = "Refresh";
+	      $scope.$broadcast("expandDock", false);
 	      console.log("My easyrtcid is " + myId);
 	      // begin sending snapshots at 
 	      
@@ -178,13 +238,14 @@
 	      }, 5000);
 	    };
 	    easyrtc.connect(
-      	$scope.roomName == "" ? "default" : $scope.roomName, 
+      	$scope.roomName, 
       	connectSuccess, 
       	connectFailure
       );
 	  };
 	  var disconnectFromServer = function(){
 	  	// TODO: remove intervals then disconnect
+	  	
 	  	easyrtc.disconnect();
 	  	
 	  };
@@ -199,7 +260,11 @@
 	  };
 	  var checkRoomLength = function(){
 	    // $scope.$apply(function(){
-		    var realRoomList = easyrtc.getRoomOccupantsAsArray("default");
+		    var realRoomList = easyrtc.getRoomOccupantsAsArray($scope.roomName);
+		    if(realRoomList.length == null){
+		    	console.log("Error checking room length: room length is null.", realRoomList);
+		    	return;
+		    }
 		    if((NetworkData.peerLength+1) != realRoomList.length){
 		    	console.log("incorrect room length!");
 		    	var user;
@@ -231,7 +296,7 @@
 		    }
 		  // });
 	  };
-		$scope.$on('initCall', function() {
+		$scope.$on('initStream', function() {
 			// check notification permission and enable if not enabled
 	    notifyMe("You will receive a notification when someone is trying to contact you");
 	    easyrtc.setRoomOccupantListener(roomListener);
@@ -279,10 +344,10 @@
 		      		easyrtc.sendData(easyrtcid, "readyForCall");
 		      	});
 		      	break;
-		      case "getFirstSnapshot":
+		      case "getCurrentSnapshot":
 		      	// sends current snapshot to user requesting first snapshot
 		      	preRoomListenerEvents.push(function(){
-		      		$scope.$broadcast('sendFirstSnapshot', easyrtcid);
+		      		$scope.$broadcast('sendCurrentSnapshot', easyrtcid);
 		      	});
 		      	break;
 		      case "readyForCall":
@@ -291,6 +356,7 @@
 		      case "groupUpdate":
 		        // network.updateGroups(msgData);
 		        break;
+
 		    }
 	    });
 	  });
@@ -310,6 +376,14 @@
 	  });
 	  easyrtc.setDisconnectListener(function(){
 	  	// TODO: callback for when server gets disconnected
+		  easyrtc.sendServerMessage('roomLeave', null,
+	      function(msgType, msgData ) {
+	         console.log("Left room during server disconnect");
+	      },
+	      function(errorCode, errorText) {
+	         console.log("Room leave fail - " + errorCode + ":" + errorText);
+	      }
+      );
 		  $scope.$apply(function(){
 		  	killIntervals();
 		  	serverConnected = false;
@@ -327,7 +401,11 @@
 	  		if(localStreamEnded && !serverConnected){
 	  			console.log('...local stream was ended, reinitializing');
 	  			localStreamEnded = false;
-	  			$scope.$emit('initCall');
+	  			$scope.$emit('initStream');
+	  		}
+	  		for(var id in NetworkData.allPeers){
+	  			// refreshing all snapshots of peers
+	  			easyrtc.sendData(id, 'getCurrentSnapshot', easyrtc.myEasyrtcid);
 	  		}
 	  	});
 	  };

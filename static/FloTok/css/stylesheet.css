@@ -4,8 +4,7 @@ html, body {
 	height: 100%;
 	width: 100%;
 	/*background: linear-gradient(rgba(23, 25, 55, 0.5),rgba(14, 15, 27, 0.8));*/
-	background: url('../img/mountain.jpg');
-	background-size: cover;
+	background-color: #0A0C12;
 	font-family: Arial;
 	overflow: hidden;
 }
@@ -21,6 +20,14 @@ video {
 }
 
 /************** ID Elements ******************/
+.background-image {
+	position: absolute;
+	margin: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+}
+
 #username-container {
 
 	text-align: center;
@@ -62,7 +69,9 @@ video {
   transform: translate(-50%, 0);
   left: 50%;
   -webkit-filter: grayscale(1);
+  -moz-filter: grayscale(1);
   -webkit-transition: opacity 500ms;
+  -moz-transition: opacity 500ms;
 }
 
 #snapshot.show, #snapshot-options.show {
@@ -97,15 +106,15 @@ video {
 
 #snapshot-options .interval-toggle{
 	top: 0;
-  font-size: 1.5vmin;
+  font-size: 12px;
   color: white;
   padding-top: 3vmin;
   
 }
 
 #snapshot-options .interval-toggle input {
-	width: 1.5vmin;
-  height: 1.5vmin;
+	width: 12px;
+  height: 12px;
   cursor: pointer;
 }
 
@@ -125,11 +134,11 @@ video {
   text-align: right;
   color: white;
   font-size: 3vmin;
-  width: 5vmin;
+  width: 8vmin;
 }
 
 #snapshot-options * {
-  opacity: 0.4;
+  opacity: 0.7;
 }
 
 #snapshot-options *:hover {
@@ -203,9 +212,14 @@ video {
 	box-shadow: -4px 0px 0 rgba(0, 0, 0, 0.1);
 	z-index: 30;
 	-webkit-transition: width 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275);
+	-moz-transition: width 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275);
 	/*transition: right 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275);*/
 }
 
+
+#easyrtcErrorDialog {
+	display: none !important;
+}
 
 /************** Class Elements *****************/
 
@@ -228,6 +242,7 @@ video {
 	border-style: dashed;
 	box-shadow: 0 .5vmin 1vmin rgba(0,0,0,0.5);
 	-webkit-transition: border-width 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275);
+	-moz-transition: border-width 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275);
 
 }
 
@@ -248,6 +263,24 @@ video {
 	/*opacity: 0;*/
 }
 
+#room-container {
+	top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  margin: 15vmin 20vmin;
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.59);
+  box-shadow: 0px 4px 0px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  -webkit-transition: opacity 500ms;
+  -moz-transition: opacity 500ms;
+}
+
+#room-container.show {
+	opacity: 1;
+}
 
 #caller-container {
 	position: absolute;
@@ -257,6 +290,14 @@ video {
   left: 0;
   padding: 15vmin 20vmin;
   right: 0;
+}
+
+#participants-container {
+	position: relative;
+  height: 100%;
+  width: 40vmin;
+  max-width: 250px;
+  float: right;
 }
 
 .display-name{
@@ -306,6 +347,7 @@ video {
 	position: absolute;
 	z-index: 1;
 	-webkit-filter: grayscale(1);
+	-moz-filter: grayscale(1);
 	opacity: 0;
 	height: 100%;
 	left: 50%;
@@ -331,6 +373,8 @@ video {
 	margin-top: 10px;
 	-webkit-transition: margin 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275),
 						opacity 500ms;
+	-moz-transition: margin 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275),
+		opacity 500ms;
 }
 #tool-container .border:nth-child(1){
 	margin-top: 0;
@@ -463,6 +507,7 @@ video {
 
 .status-indicator.self {
 	cursor: default;
+	float: left;
 }
 
 .status-indicator .action-overlay {

@@ -48,8 +48,8 @@ Bubble.prototype.initFloat = function(x, y){
   var visibleWidth = $html.width()-videoOffsetHeight;
   this.x = x !== null ? x : Math.random()*visibleWidth;
   this.y = y !== null ? y : $html.height();
-  //generates random linear speed from 20-30
-  this.linearSpeed = parseInt((Math.random()*10)+20);	
+  //generates random linear speed from 10-20, 30 would be fastest
+  this.linearSpeed = parseInt((Math.random()*10)+10);	
   this.startTime = (new Date()).getTime();
   this.animateFloat();
 }
@@ -102,7 +102,7 @@ Bubble.prototype.floatUp = function(){
 
   // check to make sure the bubble isnt off the screen yet 
   if((this.y - newY) > -1*videoOffsetHeight) {
-    var amplitude = 20;
+    var amplitude = 15;
     this.y -= newY;
     var period = 3000;		// in ms
     var nextX = amplitude * Math.sin(time * 2 * Math.PI / period) + this.x;
@@ -184,11 +184,11 @@ Bubble.prototype.addToAnimationQueue = function(direction, callback){
   	case 'twoway':
   		this.animation
       .to(this.videoContainer,0.5,{
-      	borderRadius:'2vmin', 
+      	borderRadius:'1vmin', 
       	ease: easeType
       })
       .to(this.ring,0.75, {
-      	borderRadius:'2vmin', 
+      	borderRadius:'1vmin', 
       	width:'43vmin', 
       	height:'43vmin',
       	maxWidth: '210px',
@@ -234,7 +234,6 @@ Bubble.prototype.expandAt = function(x, y, callback, paramArray){
     .to(this.videoContainer, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
   }
   
-	
 };
 Bubble.prototype.collapse = function(callback, paramArray){
 	// TODO: Collapse bubble at current location
@@ -280,5 +279,5 @@ Bubble.prototype.resetAnimationQueue = function(){
 	//								if the the user makes call, animation will get stuck
 	// TEMP FIX: set progress of previous to end before clearing the data,
 	//						however this makes the animation jump
-	this.animation.progress(1).clear().eventCallback("onComplete", null);;
+	this.animation.progress(1).clear().eventCallback("onComplete", null);
 }

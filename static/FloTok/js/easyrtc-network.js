@@ -88,8 +88,10 @@ angular.module('VirtualOffice', [])
 .service('NetworkData', function ($interval){
   // TODO: aggregate global data containing users and groups availabe
   this.peerLength = 0;
+  this.roomParticipantsLength = 0;
   this.allGroups = {};
   this.allPeers = {};
+  this.roomParticipants = {};
   this.transmitAll = false;
   this.snapshotInterval;
   this.haltInterval;

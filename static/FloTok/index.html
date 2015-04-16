@@ -12,23 +12,33 @@
     <script type="text/javascript" src="../js/jquery-1.10.2.js"></script>
     <script type="text/javascript" src="../js/jquery-ui.js"></script>
 
+
     <!-- Personal CSS -->
 	<link rel="stylesheet" type="text/css" href="css/stylesheet.css" />
 	<!-- <link rel="stylesheet" type="text/css" href="css/bubbleEffects.css" /> -->
 
 
 </head>
-<body ng-controller="StreamController as network">	
+<body ng-controller="StreamController as network">
+	<img ng-src="./img/mountain.png" class="background-image" image-loaded />
 	<get-username display-name="myDisplayName" room-name="roomName"></get-username>
-	<self-bubble></self-bubble>
+	
+	<!-- Room Container is only for the background box!!
+	     DOM elements should be pinned in Caller Container -->
+	<div ng-class="{show:connectedToRoom != null}" id="room-container"></div>
+	
 	<div id="caller-container">
 		<peer-bubble ng-repeat="peer in allPeers track by peer.id" peer="peer"></peer-bubble>
+		<self-bubble connected-to-room="connectedToRoom"></self-bubble>
+		<div id="participants-container">
+			<peer-bubble ng-repeat="peer in roomParticipants track by peer.id"></peer-bubble>
+		</div>
 	</div>
 	<status-dock id="dock"></status-dock>
 
 
 	<!-- Class Definitions and Dependencies for main.js -->
-
+	<script type='text/javascript' src='js/hark.bundle.js'></script>
 	<script type="text/javascript" src="js/easyrtc-network.js"></script>
 	<script type="text/javascript" src="js/Bubble.js"></script>
   <script type="text/javascript" src="js/User.js"></script>

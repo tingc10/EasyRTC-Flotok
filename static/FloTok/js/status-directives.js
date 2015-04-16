@@ -37,16 +37,16 @@ angular.module('VirtualOffice')
 				expandDock(expand);
 			});
 			/****************** ANGULAR WATCH ****************/
-			scope.$watch(function(){
-				return NetworkData.peerLength;
-			}, function(newValue, oldValue){
-					if(oldValue == 0 && newValue > 0){
-						TweenMax.set(element, {width: '8vmin'});
-					} else if(oldValue > 0 && newValue == 0){
-						TweenMax.set(element, {width: 0});
-					}
-				}
-			);
+			// scope.$watch(function(){
+			// 	return NetworkData.peerLength;
+			// }, function(newValue, oldValue){
+			// 		if(oldValue == 0 && newValue > 0){
+			// 			TweenMax.set(element, {width: '8vmin'});
+			// 		} else if(oldValue > 0 && newValue == 0){
+			// 			TweenMax.set(element, {width: 0});
+			// 		}
+			// 	}
+			// );
 		}
 	}
 	}])
@@ -148,6 +148,7 @@ angular.module('VirtualOffice')
 			var elapsed = 0;
 			var interval = null;
 			var timeup = false;
+			scope.shouldShow = true;
 			var determineStatusLabel = function(hover){
 				if(hover){
 					if(NetworkData.transmitAll){
@@ -212,6 +213,16 @@ angular.module('VirtualOffice')
 			}, function(newValue, oldValue){
 				scope.transmitAll = newValue;
 				determineStatusLabel(false);
+			});
+			
+			scope.$watch(function(){
+				return NetworkData.peerLength;
+			}, function(newValue, oldValue){
+				if(newValue > 0){
+					scope.shouldShow = true; 
+				} else {
+					scope.shouldShow = false;
+				}
 			});
 		}
 	}

@@ -125,6 +125,11 @@ var socketServer = io.listen(webServer, {"log level":1, 'destroy buffer size': I
 
 /***************** EXPRESS ROUTE CONFIG **************************/
 
+app.get('/flotok', function(req, res){
+  res.redirect('/FloTok');
+
+});
+
 app.get('/photoStream/main.html', function(req, res){
   res.redirect('/photoStream/index.html');
 });

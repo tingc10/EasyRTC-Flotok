@@ -8,7 +8,7 @@
 				<input type="checkbox" ng-model='haltInterval'></input><span ng-click="haltInterval = !haltInterval">Halt Updates</span>
 			</div>
 			<div class="interval" ng-show="!haltInterval">
-				<input type="number" min="5" ng-model='snapshotInterval'></input> sec(s)
+				<input type="number" min="5" ng-model='snapshotInterval' input-check></input> sec(s)
 			</div>
 			<i class="fa fa-camera" title="Take Snapshot" ng-click="takeSnapshot()"></i>
 		</div>

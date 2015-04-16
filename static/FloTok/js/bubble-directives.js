@@ -1,26 +1,59 @@
 // BUBBLE DIRECTIVES
 
 angular.module('VirtualOffice')
-.directive('selfBubble',['NetworkData', function(NetworkData){
+.directive('selfBubble',['NetworkData', '$rootScope', function(NetworkData, $rootScope){
 	// TODO: directive defining own video container
 	return {
 		restrict: 'E',
 		templateUrl: './directives/self-bubble.html',
-		scope: {},
+		scope: {
+			connectedToRoom: "="
+		},
 		link: function(scope, element, attrs){
 			var videoContainer = element[0].querySelector('.video-container');
+			var statusIndicator = element[0].querySelector('.status-indicator');
 			var $video = element.find('video');		// jquery lite
-
+			var speechEvents = null;
 			var snapshotCanvas = element[0].querySelector("#snapshot");
+			var speaking = false;		// helps determine active speaker
+			var animation = new TimelineMax({paused: true});
+
 			scope.bubble = new Bubble(element);
 			scope.hover = false;
 			scope.haltInterval = false;
-			scope.snapshotInterval = 5;
+			scope.snapshotInterval = 10;
+
+			var changeSelfView = function(connected){
+
+				var position = statusIndicator.style.position;
+				animation.progress(1).clear().eventCallback("onComplete", null);
+				if(connected){
+					if(position == "relative")
+						return;
+					animation.to(videoContainer, .5, {width: 0, height: 0, margin: '20vmin', ease: Power3.easeInOut})
+					.set(statusIndicator, {position: 'relative', margin: 10})
+					.to(videoContainer, .5, {width: '40vmin', height: '40vmin', margin:0, borderRadius:'1vmin', ease: Back.easeInOut})
+					.to(videoContainer, .5, {width:'15vmin', height: '15vmin'}, '+=2');	// delay two seconds after
+				} else {
+					if(position == "absolute")
+						return;
+					animation.to(videoContainer, .5, {width: 0, height: 0})
+					.set(videoContainer, {margin: '20vmin'})
+					.set(statusIndicator, {position:"absolute", margin: 0})
+					.set(videoContainer, {borderRadius:'50%'})
+					.to(videoContainer, .5, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut});
+				}
+				animation.play();
+			};
 
 			scope.$watch(function(){
 				return scope.snapshotInterval;
 			}, function(){
-				NetworkData.snapshotInterval = scope.snapshotInterval;
+				console.log("value changed:" + scope.snapshotInterval);
+				if(scope.snapshotInterval >= 5){
+					console.log('changing scope interval');
+					NetworkData.snapshotInterval = scope.snapshotInterval;
+				}
 			});
 
 			scope.$watch(function(){
@@ -30,9 +63,10 @@ angular.module('VirtualOffice')
 				NetworkData.haltInterval = scope.haltInterval;
 			});
 
-			$(element).draggable({
+			$(statusIndicator).draggable({
 				scroll : false
 			});
+
 			scope.takeSnapshot = function(){
 				scope.$emit('takeSnapshot');
 			};
@@ -68,10 +102,35 @@ angular.module('VirtualOffice')
 			});
 			scope.$on('initSelfVideo', function(){
 				scope.$apply(function(){
-					easyrtc.setVideoObjectSrc($video[0], easyrtc.getLocalStream());
+					var localStream = easyrtc.getLocalStream();
+					easyrtc.setVideoObjectSrc($video[0], localStream);
+					
+					// hark determines active speaker
+					if(speechEvents == null){
+						speechEvents = hark(localStream, {});
+						speechEvents.on('speaking', function(){
+							scope.$apply(function(){
+								speaking = true;
+								// console.log('start speaking');
+								setTimeout(function(){
+									if(speaking){
+										console.log('actively speaking');
+									}
+								}, 3000)
+							});
+						})
+						speechEvents.on('stopped_speaking', function(){
+							scope.$apply(function(){
+								speaking = false;
+								// console.log('stopped speaking');
+							});
+							
+						});
+					}
+
       		scope.bubble.expandAt(0, 0, null, null);
       		scope.bubble.playAnimationQueue();
-      		scope.$emit('takeSnapshot');
+      		scope.takeSnapshot();
       	});
 			});
 			scope.$on('clearSelfStream', function(){
@@ -84,16 +143,35 @@ angular.module('VirtualOffice')
 				var nameDOM = element[0].querySelector('.display-name');
 				nameDOM.innerHTML = displayName;
 			});
-			scope.$on('sendFirstSnapshot', function(e, userRequesting){
+			scope.$on('sendCurrentSnapshot', function(e, userRequesting){
 				var data = snapshotCanvas.toDataURL();
 				console.log('sending new user first snapshot');
 				easyrtc.sendData(userRequesting, "newSnapshot", data);
 			});
 
+
+			$rootScope.$on('updateConnectionView', function(e, callState, id){
+
+				console.log('changing room-container');
+				switch(callState){
+					case callStatus.CALLFROM:
+					case callStatus.NONE:
+						scope.connectedToRoom = null;
+						changeSelfView(false);
+						break;
+					case callStatus.CALLTO:
+					case callStatus.TWOWAY:
+						scope.connectedToRoom = id;
+						changeSelfView(true);
+
+						break;
+				}
+			});
+
 		}
 	};
 }])
-.directive('peerBubble', ['NetworkData', '$timeout', function(NetworkData, $timeout){
+.directive('peerBubble', ['NetworkData', '$timeout', '$rootScope', function(NetworkData, $timeout, $rootScope){
 	return {
 		restrict: 'E',
 		scope: {
@@ -109,7 +187,9 @@ angular.module('VirtualOffice')
 					$video = element.find('video');
 			scope.snapshots = [];
 			scope.callStatusLabel = '';
-			
+			// preventCall is used to prevent a user from calling someone back if they
+			// click the end call at the same time
+			scope.preventCall = false;
 			scope.callActionLabel;
 			scope.$watch(function(){
 				return scope.peer.callStatus;
@@ -124,9 +204,20 @@ angular.module('VirtualOffice')
 						break;
 					case callStatus.CALLTO:
 					case callStatus.TWOWAY:
+
 						scope.callActionLabel = "END CHAT";
 						
 						break;
+				}
+				$rootScope.$emit('updateConnectionView', scope.peer.callStatus, scope.peer.id);
+			});
+
+			scope.$watch(function(){
+				return scope.snapshots.length;
+			}, function(newValue, oldValue){
+				// if there are no snapshots,
+				if(newValue == 0){
+					easyrtc.sendData(scope.peer.id, 'getCurrentSnapshot', easyrtc.myEasyrtcid);
 				}
 			});
 			var performCall = function(){
@@ -157,7 +248,7 @@ angular.module('VirtualOffice')
 							}
 						});
 						// requests an initial snapshot for the user
-						// easyrtc.sendData(scope.peer.id, 'getFirstSnapshot', easyrtc.myEasyrtcid);
+						easyrtc.sendData(scope.peer.id, 'getCurrentSnapshot', easyrtc.myEasyrtcid);
 						if(NetworkData.transmitAll){
 							easyrtc.sendData(scope.peer.id, 'callWhenReady', easyrtc.myEasyrtcid);
 						}
@@ -190,16 +281,21 @@ angular.module('VirtualOffice')
 
 			}).bind('mousedown', function(){
 				scope.$apply(function(){
-					callEvent = true;
+					if(!scope.preventCall){
+						callEvent = true;
+					}
+					TweenMax.set(statusIndicator, {zIndex:'10'});
 				});
 			
 			}).bind('mouseup', function(){
 				// no apply wrap needed here as toggleTransmition will end with apply
+				
 				if(callEvent){
 					performCall();
 				} else if(selectEvent){
 
 				}
+				TweenMax.set(statusIndicator, {zIndex:'3'});
 				callEvent = selectEvent = false;
 			});
 			/**************** ANGULAR EVENTS ******************/
@@ -226,6 +322,11 @@ angular.module('VirtualOffice')
 			scope.$on(scope.peer.id+'streamClosed', function(){
 				// apply will show error, on the person closing the stream, just ignore
 				// scope.$apply(function(){
+					scope.preventCall = true;
+					
+					$timeout(function(){
+						scope.preventCall = false;
+					}, 1000);
 			    scope.peer.callStatus = callStatus.NONE;
 			    scope.peer.evalCallState(scope);
 			    easyrtc.clearMediaStream($video[0]);
@@ -317,4 +418,19 @@ angular.module('VirtualOffice')
       newFade.eventCallback("onComplete", animationComplete);
     }
   } 
+})
+.directive('inputCheck', function(){
+	return {
+		restrict: 'A',
+		link: function(scope, element, attrs){
+			element.bind('focusout',function(){
+				scope.$apply(function(){
+					if(element[0].value < 5 || isNaN(element[0].value)){
+						element[0].value = 5;
+						scope.snapshotInterval = 5;
+					}
+				});
+			});
+		}
+	}
 });
