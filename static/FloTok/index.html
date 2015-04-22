@@ -25,14 +25,20 @@
 	
 	<!-- Room Container is only for the background box!!
 	     DOM elements should be pinned in Caller Container -->
-	<div ng-class="{show:connectedToRoom != null}" id="room-container"></div>
+	
 	
 	<div id="caller-container">
-		<peer-bubble ng-repeat="peer in allPeers track by peer.id" peer="peer"></peer-bubble>
-		<self-bubble connected-to-room="connectedToRoom"></self-bubble>
-		<div id="participants-container">
-			<peer-bubble ng-repeat="peer in roomParticipants track by peer.id"></peer-bubble>
+		<div id="room-container" hide-room-container>
+			<video-display class="canvas-wrapper" canvas-id="active-speaker" ng-class="{show:showRoomContainer}"></video-display>
+			<div id="participants-container">
+				<video-display class="canvas-wrapper participant" canvas-id="{{peerInfo.id}}" call-status='peerInfo.callStatus' ng-repeat="peerInfo in interactingPeers track by peerInfo.id"></video>
+			</div>
 		</div>
+		<div id='room-status'>{{roomStatusMessage}}</div>
+		<peer-bubble ng-repeat="peer in allPeers track by peer.id" peer="peer"></peer-bubble>
+		<self-bubble connected-to-room="showRoomContainer"></self-bubble>
+		
+		
 	</div>
 	<status-dock id="dock"></status-dock>
 

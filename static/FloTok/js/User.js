@@ -117,21 +117,24 @@ User.prototype.toggleTransmition = function(turnOn, scope){
 			return;
 		}
 	} else {
-		if(this.callStatus == callStatus.TWOWAY || this.callStatus == callStatus.CALLTO){
-			// if(this.callStatus == callStatus.CALLTO){
-			// hang call for either case
-			this.endConnection();
-				// no need for evalCallstate here, allow stream closed to call it
-			// } else {
-			// 	this.toggleVoiceSocket(false);
-			// 	this.evalCallState(scope);
+		// just end connection is turnOn == false
+		this.endConnection();
 
-			// }
-		} else {
-			console.log("not transmitting to " + this.displayName + " already");
+		// if(this.callStatus == callStatus.TWOWAY || this.callStatus == callStatus.CALLTO){
+		// 	// if(this.callStatus == callStatus.CALLTO){
+		// 	// hang call for either case
 			
-			return;
-		}
+		// 		// no need for evalCallstate here, allow stream closed to call it
+		// 	// } else {
+		// 	// 	this.toggleVoiceSocket(false);
+		// 	// 	this.evalCallState(scope);
+
+		// 	// }
+		// } else {
+		// 	console.log("not transmitting to " + this.displayName + " already");
+			
+		// 	return;
+		// }
 	}
 	
 };

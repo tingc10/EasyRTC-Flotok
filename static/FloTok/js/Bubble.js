@@ -57,7 +57,11 @@ Bubble.prototype.initFloat = function(x, y){
 Bubble.prototype.haltFloat = function(shouldStop, x, y){
 	// TODO: sets the shouldFloat variable,
 	//				x and y define a specific start location
-	this.shouldFloat = !shouldStop;
+	
+  // prevent initfloat from being called twice if the behavior is already set to expected
+  if(this.shouldFloat == !shouldStop) return;
+  
+  this.shouldFloat = !shouldStop;
 	if(!shouldStop){
 		// need to begin floating, decide where to start the float from
 		if(x != null && y != null){
@@ -226,7 +230,7 @@ Bubble.prototype.expandAt = function(x, y, callback, paramArray){
 	// REQUIRE: CALLBACKS MUST HAVE SCOPE.$APPLY EMBEDED!!! 
 	if(animateBubbles){
     this.animation
-    .set(this.statusIndicator, {position: 'absolute',left: x, top: y})
+    .set(this.statusIndicator, {position: 'absolute',  display: 'block', left: x, top: y})
     .to(this.videoContainer, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
   } else {
     this.animation
@@ -241,7 +245,8 @@ Bubble.prototype.collapse = function(callback, paramArray){
 	// REQUIRE: CALLBACKS MUST HAVE SCOPE.$APPLY EMBEDED!!! 
 	this.animation
 	.set(this.statusIndicator, {position: 'absolute'})
-	.to(this.videoContainer, .5, {width: 0, height: 0, margin: '20vmin', ease: Power3.easeInOut, onComplete: callback, onCompleteParams: paramArray});
+	.to(this.videoContainer, .5, {width: 0, height: 0, margin: '20vmin', ease: Power3.easeInOut, onComplete: callback, onCompleteParams: paramArray})
+  .set(this.statusIndicator, {display: 'none'});
 
 	
 };

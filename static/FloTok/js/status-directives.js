@@ -104,6 +104,7 @@ angular.module('VirtualOffice')
 			});
 			element.bind('mouseenter', function(){
 				scope.$apply(function(){
+					$rootScope.$emit(scope.peer.id+"checkChannel");
 					hoverStart = new Date().getTime();
 					determineStatusLabel(true);
 					elapsed = 0;
@@ -223,7 +224,7 @@ angular.module('VirtualOffice')
 				} else {
 					scope.shouldShow = false;
 				}
-			});
+			}, true);
 		}
 	}
 }]);

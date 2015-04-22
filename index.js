@@ -77,6 +77,9 @@ easyrtc.on("getIceConfig", function(connectionObj, callback) {
             iceConfig = body.d.iceServers;  
             console.log(iceConfig);
             callback(null, iceConfig);
+        } else {
+          console.log("ERROR: Could not get IceConfig from XIRSYS.");
+          
         }
     });
 });
