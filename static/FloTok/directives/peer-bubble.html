@@ -1,9 +1,16 @@
 <div class="remote-user status-indicator">
 	
 	<div class="video-container" ng-class="{selected: peer.selected}">
+		<div class="action-overlay" ng-class="{'do-not-disturb': doNotDisturb}">
+			<div class="overlay-title">
+				<i class="fa fa-minus-circle"></i>
+			</div> 
+		</div>
+
 		<div class="action-overlay">
 			<div class="overlay-title" ng-class="{'end-chat':peer.callStatus == 1 || peer.callStatus == 3}">{{callActionLabel}}</div>
 		</div>
+
 		<video ng-show="peer.callStatus == 2 || peer.callStatus == 3"></video>
 		<div class="display-name">{{peer.displayName}}</div>
 		<img class="snapshot" ng-src="{{snapshot}}" ng-repeat="snapshot in snapshots track by $index" fade-snapshot />

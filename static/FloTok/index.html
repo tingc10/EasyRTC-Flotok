@@ -29,12 +29,14 @@
 	
 	<div id="caller-container">
 		<div id="room-container" hide-room-container>
+
+			<i class="fa fa-times close-room" ng-click="closeRoom()"></i>
 			<video-display class="canvas-wrapper" canvas-id="active-speaker" ng-class="{show:showRoomContainer}"></video-display>
-			<div id="participants-container">
+			<div id="participants-container" show-participants>
 				<video-display class="canvas-wrapper participant" canvas-id="{{peerInfo.id}}" call-status='peerInfo.callStatus' ng-repeat="peerInfo in interactingPeers track by peerInfo.id"></video>
 			</div>
+			<div id="room-message" ng-show="roomMessage.length != ''">{{roomMessage}}</div>
 		</div>
-		<div id='room-status'>{{roomStatusMessage}}</div>
 		<peer-bubble ng-repeat="peer in allPeers track by peer.id" peer="peer"></peer-bubble>
 		<self-bubble connected-to-room="showRoomContainer"></self-bubble>
 		

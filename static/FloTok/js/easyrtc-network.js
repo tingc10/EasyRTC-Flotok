@@ -19,7 +19,7 @@ var callStatus = {
 //     snapshotCanvas = document.getElementById("snapshot"), 
 //     $html = $("html");
 // Set the name of the hidden property and the change event for visibility
-var hidden, visibilityChange; 
+var hidden, visibilityChange, globalDoNotDisturb = false; 
 if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and later support 
   hidden = "hidden";
   visibilityChange = "visibilitychange";
@@ -96,6 +96,7 @@ angular.module('VirtualOffice', [])
   this.haltInterval;
   this.initializationComplete = false;
   this.interactingPeers = {};
+  this.connected = 0;
   this.addPeer = function(easyrtcid){
     this.allPeers[easyrtcid] = new User(easyrtcid);
     // this.peerLength++;

@@ -61,18 +61,31 @@ User.prototype.endConnection = function(){
 	easyrtc.hangup(this.id);
 };
 
-User.prototype.toggleVoiceSocket = function(turnOn){
+User.prototype.toggleVoiceSocket = function(turnOn, automatic){
 	// TODO: requests your audio stream to go through to this user
 	//				determines the call status
+	//				automatic parameter determines if the function was user triggered or networktriggered
 	if(turnOn){
 		if(this.callStatus == callStatus.NONE){
 			this.callStatus = callStatus.CALLTO;
 		} else if(this.callStatus == callStatus.CALLFROM){
 			this.callStatus = callStatus.TWOWAY;
+			if(globalDoNotDisturb){
+				// since the audio will not turn on if you go onto doNotDisturb, we must turn the calling user's
+				// audio stream on when you form a two way call
+				var userStream = easyrtc.getRemoteStream(this.id);
+  			var audioStream = userStream.getAudioTracks()[0];
+  			audioStream.enabled = true;
+			}
 		} else {
 			console.log("call status not set as expected");
 		}
-		easyrtc.sendData(this.id, "activateVoice",  easyrtc.myEasyrtcid);
+		if(!automatic){
+			easyrtc.sendData(this.id, "activateRoom");
+		} else {
+			easyrtc.sendData(this.id, "activateVoice",  easyrtc.myEasyrtcid);
+
+		}
 	} else {
 		if(this.callStatus == callStatus.TWOWAY){
 			this.callStatus = callStatus.CALLFROM;
@@ -85,9 +98,10 @@ User.prototype.toggleVoiceSocket = function(turnOn){
 	}
 };
 
-User.prototype.toggleTransmition = function(turnOn, scope){
+User.prototype.toggleTransmition = function(turnOn, scope, automatic){
 	// TODO: determines if the call is to be turned on or off,
 	//				forms connection if none exists
+	//				automatic parameter determines if the function was user triggered or networktriggered
 	this.updateConnectionStatus();
 	if(turnOn){
 		// check if they are
@@ -99,7 +113,7 @@ User.prototype.toggleTransmition = function(turnOn, scope){
 				var networkCallback = function(accepted, bywho){
 					scope.$apply(function(){
 						console.log((accepted?"accepted":"rejected")+ " by " + bywho);
-						peer.toggleVoiceSocket(true);
+						peer.toggleVoiceSocket(true, automatic);
 						peer.evalCallState(scope);
 
 					});
@@ -107,7 +121,7 @@ User.prototype.toggleTransmition = function(turnOn, scope){
 				this.formConnection(networkCallback);
 			} else {
 				// enable audio stream, no need for call since user is already connected
-				this.toggleVoiceSocket(true);
+				this.toggleVoiceSocket(true, automatic);
 				this.evalCallState(scope);
 
 			}
@@ -148,16 +162,21 @@ User.prototype.toggleAudioStream = function(turnOn) {
   if(turnOn){
   	if(this.callStatus == callStatus.CALLTO){
   		this.callStatus = callStatus.TWOWAY;
+  		audioStream.enabled = turnOn;
   	} else if(this.callStatus == callStatus.NONE){
   		this.callStatus = callStatus.CALLFROM;
+  		if(!globalDoNotDisturb){
+  			audioStream.enabled = turnOn;
+  		}
   	}
-    audioStream.enabled = !audioStream.enabled;
+    // audioStream.enabled = !audioStream.enabled;
   } else {
   	if(this.callStatus == callStatus.TWOWAY){
   		this.callStatus = callStatus.CALLTO;
   	} else if(this.callStatus == callStatus.CALLFROM){
   		this.callStatus = callStatus.NONE;
   	}
+
     audioStream.enabled = turnOn;
   }
   this.shouldToggleVideo();

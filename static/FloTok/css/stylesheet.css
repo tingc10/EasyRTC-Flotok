@@ -278,13 +278,27 @@ video, canvas {
   left: 0;
   right: 0;
   z-index: 4;
-  margin: 15vmin 20vmin;
+  margin: 15vmin 30vmin 15vmin 10vmin;
   position: absolute;
   background-color: rgba(0, 0, 0, 0.59);
   box-shadow: 0px 4px 0px rgba(0, 0, 0, 0.2);
   opacity: 0;
   display: none;
   
+}
+
+#room-message {
+	position: absolute;
+  top: 50%;
+  left: 50%;
+  color: white;
+  display: block;
+  z-index: 20;
+  width: 45vmin;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.59);
+  padding: 1vmin;
 }
 
 /*#room-container.show {
@@ -296,7 +310,7 @@ video, canvas {
   top: 0;
   bottom: 0;
   left: 0;
-  padding: 15vmin 20vmin;
+  padding: 15vmin 30vmin 15vmin 10vmin;
   right: 0;
   z-index: 4;
 }
@@ -531,8 +545,14 @@ video, canvas {
 
 }
 
-.action-overlay:hover {
+.action-overlay:hover, .action-overlay.do-not-disturb {
 	opacity: 1;
+}
+
+.action-overlay .fa-minus-circle {
+	transform: translate(-50%, -50%);
+	font-size: 6vmin;
+	color: rgba(221, 0, 0, .4);
 }
 
 .status-indicator .overlay-title {
@@ -649,9 +669,24 @@ video, canvas {
 .faux-bubble .fa {
 	color: white;
   transform: translate(-50%, -50%);
-  position: relative;
+  position: absolute;
   display: inline;
-  margin-right: 2px;
+
+}
+
+.faux-bubble .fa-minus-circle {
+	font-size: 5vmin;
+	transform: translate(-50%, -50%) rotate(0deg);
+	transition: transform 500ms, color 500ms;
+	-webkit-transition: transform 500ms, color 500ms;
+	-moz-transition: transform 500ms, color 500ms;
+	color: rgba(221, 0, 0, .8);
+}
+
+.faux-bubble .fa-minus-circle.available {
+	transform: translate(-50%, -50%) rotate(90deg);
+	color: rgba(5, 155, 5, 0.8);
+
 }
 
 .confirm-button{
@@ -819,6 +854,14 @@ video, canvas {
 	-moz-transform: translate(-50%, 100%);
 }
 
+.close-room {
+	position: absolute;
+  right: 1vmin;
+  top: 1vmin;
+  font-size: 3vmin;
+  cursor: pointer;
+}
+
 /***************** KEYFRAMES *************************/
 @-webkit-keyframes recording {
 	0% {color: rgba(255,0,0,1);}
@@ -833,8 +876,8 @@ video, canvas {
 }
 
 @-webkit-keyframes rotate {
-	0%{transform: rotate(0deg);}
-	100%{transform: rotate(360deg);}
+	0%{transform: translate(-50%, -50%) rotate(0deg);}
+	100%{transform: translate(-50%, -50%) rotate(360deg);}
 }
 
 /************** MEDIA QUERY ************************/

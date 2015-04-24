@@ -6,7 +6,17 @@ angular.module('VirtualOffice')
 		restrict: 'E',
 		templateUrl: './directives/status-dock.html',
 		link: function(scope, element, attrs){
-			var keepExpanded
+			var keepExpanded;
+			scope.onlineStatus = "available";
+
+			scope.toggleStatus = function(){
+				if(scope.onlineStatus == "available"){
+					scope.onlineStatus = "do not disturb";
+				} else {
+					scope.onlineStatus = "available";
+				}
+				scope.$broadcast('toggleDoNotDisturb');
+			};
 			scope.getInitial = function(displayName){
 				var matches = displayName.match(/\b(\w)/g);
 	    	var acronym = matches.join('');
@@ -126,7 +136,11 @@ angular.module('VirtualOffice')
 				scope.$apply(function(){
 					determineStatusLabel(false);
 					if(pinned){
-						$rootScope.$broadcast(scope.peer.id+'unpinBubble');
+						setTimeout(function(){
+							scope.$apply(function(){
+								$rootScope.$broadcast(scope.peer.id+'unpinBubble');
+							});
+						}, 1500);
 					}
 					$interval.cancel(interval);
 					pinned = false;
@@ -191,9 +205,14 @@ angular.module('VirtualOffice')
 			.bind('mouseleave', function(){
 				// Unpin all people who aren't connected
 				if(timeup){
-					for(var peer in scope.allPeers){
-						$rootScope.$broadcast(peer+'unpinBubble');
-					}
+					
+					setTimeout(function(){
+						scope.$apply(function(){
+							for(var peer in scope.allPeers){
+								$rootScope.$broadcast(peer+'unpinBubble');
+							}
+						});
+					}, 1500);
 				}
 				determineStatusLabel(false);
 				if(interval != null)
@@ -205,7 +224,7 @@ angular.module('VirtualOffice')
 				$interval.cancel(interval);
 				NetworkData.transmitAll = !NetworkData.transmitAll;
 				for(var peer in scope.allPeers){
-					$rootScope.$broadcast(peer+'forceCall', NetworkData.transmitAll);
+					$rootScope.$broadcast(peer+'forceCall', NetworkData.transmitAll, true);
 				}
 			});
 
@@ -229,114 +248,3 @@ angular.module('VirtualOffice')
 	}
 }]);
 
-
-// .controller('FauxBubbleController', function($timeout, $scope, NetworkData){
-		
-
-
-		
-		// NetworkData.registerObserverCallback(updateUsers);
-		// $scope.getInitial = function(displayName){
-		// 	var matches = displayName.match(/\b(\w)/g);
-  //   	var acronym = matches.join('');
-  //   	return acronym;
-		// };
-		// $scope.pinAndHold = function(collection){
-		// 	// TODO: Click event, centers object and calls
-		// 	//				if selecting collection for group then different
-		// 	var type = collection.constructor.name;
-		// 	var shouldPin = function(user){
-		// 		// if user is no longer floating already, then don't run function
-		// 		if(!user.bubble.shouldFloat) return;
-		// 		if(user.callStatus == 0){
-		// 			// only need to call halt float if it's been moving
-		// 			user.haltFloat(true);
-		// 			collapseExpandAtCenter(user.bubble.element, null, null);
-		// 		}
-		// 	};
-		// 	if(type == "User"){
-		// 		// if no call going on pin to center (otherwise it should already be pinned)
-		// 		shouldPin(collection);
-		// 	} else {
-		// 		for(var id in collection.users){
-		// 			if(id == easyrtc.myEasyrtcid) continue;
-		// 			shouldPin($scope.peers[id]);
-		// 		}
-		// 	}
-		// };
-		// $scope.pauseThenEval = function(collection){
-		// 	// TODO: releases the bubble after a certain amount of time
-		// 	var type = collection.constructor.name;
-		// 	var callTimeout;
-		// 	if(type == "User"){
-		// 		callTimeout = function(){
-		// 			collection.evalCallState();
-		// 		};
-				
-		// 	} else {
-		// 		// object is a group object
-		// 		callTimeout = function(){
-		// 			for(var id in collection.users){
-		// 				if(id == easyrtc.myEasyrtcid) continue;
-		// 				$scope.peers[id].evalCallState();
-		// 			}
-		// 		};
-		// 	}
-		// 	$timeout(callTimeout, 1);
-		// };
-		// $scope.createGroup = function(){
-		// 	// TODO: changes the functionality of click to be
-		// 	if(NetworkData.selectingGroup == null){
-		// 		var group = new Group(easyrtc.myEasyrtcid, true);
-		// 		NetworkData.allGroups[group.getGroupID()] = group;
-		// 		NetworkData.selectingGroup = group.getGroupID();
-		// 	}
-		// };
-		// $scope.determineClick = function(collection){
-		// 	// TODO: determine if user is being selected or if a call is being made
-		// 	var type = collection.constructor.name;
-		// 	if(type == "User"){
-		// 		// if toggling user selection for group, dont make a call
-		// 		if(NetworkData.toggleUserSelection(collection.id)){
-		// 			return;
-		// 		}
-		// 		collection.toggleTransmition();
-		// 	} else {
-		// 		// click action on group only works if not in group selection mode
-		// 		if(NetworkData.selectingGroup == null){
-		// 			for(var id in collection.users){
-		// 				if(id == easyrtc.myEasyrtcid) continue;
-		// 				$scope.peers[id].toggleTransmition();
-		// 			}
-		// 		}
-		// 	}
-		// };
-		// $scope.pullUpAll = function(){
-		// 	for(var id in $scope.peers){
-		// 		var user = $scope.peers[id];
-		// 		if(!user.bubble.shouldFloat) continue;
-		// 		if(user.callStatus == 0){
-		// 			user.haltFloat(true);
-		// 			collapseExpandAtCenter(user.bubble.element, null, null);
-		// 		}
-		// 	}
-		// };
-		// $scope.pauseAllEval = function(){
-		// 	var callTimeout = function(){
-		// 		for(var id in $scope.peers){
-		// 			var user = $scope.peers[id];
-		// 			user.evalCallState();
-		// 		}
-		// 	};
-		// 	$timeout(callTimeout, 1);
-		// };
-		// $scope.toggleTransmitAll = function(){
-		// 	// don't enable calling of all if in selecting group mode
-		// 	if(NetworkData.selectingGroup != null) return;
-		// 	for(var id in $scope.peers){
-		// 		var user = $scope.peers[id];
-		// 		user.toggleTransmition();
-		// 	}
-		// };	
-		
-	// })

@@ -29,10 +29,13 @@ Bubble.prototype.enterRoom = function(scope) {
   var randY = animateBubbles ? Math.random() * ($html.height() - videoOffsetHeight) : 0;
  	var self = this;
  	var animateCallback = function(){
- 		scope.$apply(function(){
- 		 	self.initFloat(randX, randY);
- 		 	
- 		});
+ 		setTimeout(function(){
+      scope.$apply(function(){
+        self.initFloat(randX, randY);
+        
+      });
+    });
+      
  	};
   this.expandAt(randX, randY, animateCallback, null);
   this.playAnimationQueue();
@@ -102,7 +105,7 @@ Bubble.prototype.floatUp = function(){
   // update
   var time = (new Date()).getTime() - this.startTime;
   var newY = ((this.linearSpeed)/30).toFixed(2);
-  
+
 
   // check to make sure the bubble isnt off the screen yet 
   if((this.y - newY) > -1*videoOffsetHeight) {
@@ -132,18 +135,17 @@ Bubble.prototype.togglePin = function(pin, scope){
 		this.pinned = true;
 		this.x = null;
 		this.y = null;
-		this.collapseExpandAtCenter();
-		
+		// this.collapseExpandAtCenter();
+	  this.collapseExpandAtLocation("44vw", "2vmin");
 	} else {
-		var x = Math.random() * ($html.width() - videoOffsetHeight);
-  	var y = Math.random() * ($html.height() - videoOffsetHeight);
-		var pinCallback = function(){
-			scope.$apply(function(){
-				bubble.haltFloat(false, x, y);
-			});
-		}
+		
+		// var pinCallback = function(){
+		// 	scope.$apply(function(){
+		// 		bubble.haltFloat(false, x, y);
+		// 	});
+		// }
 		this.pinned = false;
-  	this.collapseExpandAtLocation(x, y, pinCallback, null);
+  	// this.collapseExpandAtLocation(x, y, pinCallback, null);
 		
 	}
 };
@@ -258,7 +260,7 @@ Bubble.prototype.collapseExpandAtCenter = function(callback, paramArray){
 	this.animation
 	.set(this.statusIndicator,{position: 'absolute', zIndex:5})
 	.to(this.videoContainer, .5, {width: 0, height: 0, margin: '20vmin', ease: Power3.easeInOut})
-	.set(this.statusIndicator, {position: 'relative',left: 0, top: 0, margin: '2vmin'})
+	.set(this.statusIndicator, {position: 'relative',left: 0, top: 0})
 	.to(this.videoContainer, 1, {width: '40vmin', height: '40vmin', margin:0, ease: Back.easeInOut,onComplete: callback, onCompleteParams: paramArray});
 
 }

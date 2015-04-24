@@ -1,5 +1,4 @@
 // BUBBLE DIRECTIVES
-
 angular.module('VirtualOffice')
 .directive('selfBubble',['NetworkData', function(NetworkData){
 	// TODO: directive defining own video container
@@ -19,7 +18,7 @@ angular.module('VirtualOffice')
 			scope.hover = false;
 			scope.haltInterval = false;
 			scope.snapshotInterval = 10;
-
+			scope.doNotDisturb = globalDoNotDisturb;
 			var changeSelfView = function(connected){
 
 				var position = statusIndicator.style.position;
@@ -27,7 +26,7 @@ angular.module('VirtualOffice')
 				if(connected){
 					
 					animation.to(videoContainer, .5, {width: 0, height: 0, margin: '20vmin', ease: Power3.easeInOut})
-					.set(statusIndicator, {left:'22vmin', top: "17vmin"})
+					.set(statusIndicator, {left:'11vmin', top: "16vmin"})
 					.to(videoContainer, .5, {width: '30vmin', height: '30vmin', margin:0, borderRadius:'1vmin', ease: Back.easeInOut})
 					.to(videoContainer, .5, {width:'10vmin', height: '10vmin'}, '+=2');	// delay two seconds after
 				} else {
@@ -54,7 +53,11 @@ angular.module('VirtualOffice')
 					NetworkData.snapshotInterval = scope.snapshotInterval;
 				}
 			});
-
+			scope.$watch(function(){
+				return globalDoNotDisturb;
+			}, function(){
+				scope.doNotDisturb = globalDoNotDisturb;
+			});
 			scope.$watch(function(){
 				return scope.haltInterval;
 			}, function(){
@@ -70,11 +73,18 @@ angular.module('VirtualOffice')
 			element.bind('mouseenter', function(){
 				scope.$apply(function(){
 					scope.hover = true;
+					// "in room" mouse events
+					if(NetworkData.outgoing > 0){
+						TweenMax.to(videoContainer, .5, {width: '30vmin', height: '30vmin', ease: Back.easeInOut});
+					}
 				});
 			})
 			.bind('mouseleave', function(){
 				scope.$apply(function(){
 					scope.hover = false;
+					if(NetworkData.outgoing > 0){
+						TweenMax.to(videoContainer, .5, {width: '10vmin', height: '10vmin', ease: Back.easeInOut});
+					}
 				});
 			});
 			scope.$on('takeSnapshot', function(){
@@ -140,7 +150,7 @@ angular.module('VirtualOffice')
 									});
 									
 
-								}, 3000);
+								}, 1500);
 							});
 						});
 						speechEvents.on('stopped_speaking', function(){
@@ -179,7 +189,20 @@ angular.module('VirtualOffice')
 				easyrtc.sendData(userRequesting, "newSnapshot", data);
 			});
 
+			scope.$on('toggleDoNotDisturb', function(){
+				globalDoNotDisturb = !globalDoNotDisturb;
+				NetworkData.broadcastObject(globalDoNotDisturb, "setDoNotDisturb");
 
+				if(globalDoNotDisturb){
+					scope.haltInterval = true;
+				} else {
+					scope.haltInterval = false;
+				}
+			});
+			scope.$on('sendAvailability', function(e, id){
+				easyrtc.sendData(id, "setDoNotDisturb", globalDoNotDisturb);
+
+			});
 			
 
 		}
@@ -199,9 +222,10 @@ angular.module('VirtualOffice')
 					callEvent = false,
 					selectEvent = false,
 					$video = element.find('video'),
-					outgoingToUser = false;;
+					outgoingToUser = false;
 			scope.snapshots = [];
 			scope.callStatusLabel = '';
+			scope.doNotDisturb = false;
 			// preventCall is used to prevent a user from calling someone back if they
 			// click the end call at the same time
 			scope.preventCall = false;
@@ -212,7 +236,12 @@ angular.module('VirtualOffice')
 			}, function(){
 				switch(scope.peer.callStatus){
 					case callStatus.NONE:
-						scope.callActionLabel = "START CHAT";
+						if(scope.doNotDisturb){
+							scope.callActionLabel = "NOTIFY USER";
+						} else {
+							scope.callActionLabel = "START CHAT";
+
+						}
 						break;
 					case callStatus.CALLFROM:
 						scope.callActionLabel = "JOIN CHAT";
@@ -251,12 +280,18 @@ angular.module('VirtualOffice')
 			};
 			var performCall = function(){
 				// TODO: toggle transmition decided based on current callStatus
+				
+				// obj stores information to send to other people in the room to help them determine manner
+				// of transmission
 				if(scope.peer.callStatus == callStatus.NONE ||
 						scope.peer.callStatus == callStatus.CALLFROM){
-					scope.peer.toggleTransmition(true, scope);
+					
+					scope.$emit('informRoomAboutTransmition', scope.peer.id, true);
+					scope.peer.toggleTransmition(true, scope, false);
 
 				} else {
-					scope.peer.toggleTransmition(false, scope);
+					scope.$emit('informRoomAboutTransmition', scope.peer.id, false);
+					scope.peer.toggleTransmition(false, scope, false);
 				}
 
 			};
@@ -289,6 +324,7 @@ angular.module('VirtualOffice')
 						});
 						// requests an initial snapshot for the user
 						easyrtc.sendData(scope.peer.id, 'getCurrentSnapshot', easyrtc.myEasyrtcid);
+						easyrtc.sendData(scope.peer.id, "getAvailability");
 						if(NetworkData.transmitAll){
 							easyrtc.sendData(scope.peer.id, 'callWhenReady', easyrtc.myEasyrtcid);
 						}
@@ -307,6 +343,7 @@ angular.module('VirtualOffice')
 					if(scope.bubble.shouldFloat){
 						// conditional prevents mouseover from firing multiple times
 						scope.bubble.haltFloat(true);
+
 					}
 				});
 			}).bind('mouseleave', function(){
@@ -315,6 +352,7 @@ angular.module('VirtualOffice')
 				scope.$apply(function(){
 					if(!scope.bubble.shouldFloat && !isDragging){
 						if(scope.peer.callStatus == callStatus.NONE){
+							
 							scope.bubble.haltFloat(false);								
 						}
 					}
@@ -330,17 +368,19 @@ angular.module('VirtualOffice')
 			
 			}).bind('mouseup', function(){
 				// no apply wrap needed here as toggleTransmition will end with apply
-				
-				if(callEvent || scope.callActionLabel == "ADD TO ROOM"){
-					performCall();
-				} else if(selectEvent){
+				scope.$apply(function(){
+					if(callEvent || scope.callActionLabel == "ADD TO ROOM"){
+						performCall();
+					} else if(selectEvent){
 
-				}
-				// reset callActionLabel
-				scope.callActionLabel = "START CHAT";
+					}
+					// reset callActionLabel
+					scope.callActionLabel = "START CHAT";
 
-				TweenMax.set(statusIndicator, {zIndex:'3'});
-				callEvent = selectEvent = false;
+					TweenMax.set(statusIndicator, {zIndex:'3'});
+					callEvent = selectEvent = false;
+				});
+					
 			});
 			/**************** ANGULAR EVENTS ******************/
 			scope.$on('$destroy', function(){
@@ -384,6 +424,14 @@ angular.module('VirtualOffice')
 			    easyrtc.clearMediaStream($video[0]);
 				// });
 			});
+			scope.$on(scope.peer.id+"setDoNotDisturb", function(e, setBusy){
+				$timeout(function(){
+					scope.doNotDisturb = setBusy;
+					if(scope.doNotDisturb)
+						scope.callActionLabel = "NOTIFY USER";
+				});	
+				
+			})
 
 			var updateRoomView = function(){
 				// TODO: update the view for the room and render relevant canvases
@@ -494,16 +542,21 @@ angular.module('VirtualOffice')
 				// only unpin if there is no call going on
 				if(scope.bubble.pinned && 
 					scope.peer.callStatus == callStatus.NONE){
-					scope.bubble.resetAnimationQueue();
-					scope.bubble.togglePin(false, scope);
-					scope.bubble.playAnimationQueue();
+					// scope.bubble.resetAnimationQueue();
+					// scope.bubble.togglePin(false, scope);
+					// scope.bubble.playAnimationQueue();
+					scope.bubble.togglePin(false);
+					var x = scope.bubble.statusIndicator.style.left;
+					var y = scope.bubble.statusIndicator.style.top;
+					scope.bubble.haltFloat(false, x, y);
 				}
 			});
 			scope.$on(scope.peer.id+"performCall", function(){
+				// performCall is a toggle call
 				performCall();
 			});
-			scope.$on(scope.peer.id+"forceCall", function(e, turnOn){
-				scope.peer.toggleTransmition(turnOn, scope);
+			scope.$on(scope.peer.id+"forceCall", function(e, turnOn, automatic){
+				scope.peer.toggleTransmition(turnOn, scope, automatic);
 			});
 			$rootScope.$on(scope.peer.id+'checkChannel',function(){
 				// invoked by status bar

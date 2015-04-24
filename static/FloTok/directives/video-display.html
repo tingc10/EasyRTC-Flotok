@@ -1,0 +1,10 @@
+<div class="transmission-status">{{transmissionStatus}}</div>
+<div class="action-container">
+	<div class="action accept" ng-click="acceptCall()">{{acceptMessage}}</div>
+	<div class="action decline" ng-click="declineCall()">{{declineMessage}}</div>
+</div>
+<canvas id='{{canvasId}}'></canvas>
+<div class='display-name'>{{displayName}}</div>
+<div class="img-src-hide">
+	<img class="snapshot" ng-src="{{snapshot}}" ng-repeat="snapshot in snapshots track by $index" fade-snapshot>
+</div>

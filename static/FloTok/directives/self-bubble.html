@@ -2,8 +2,8 @@
 	<div class="video-container">
 		<video id="self" muted></video>
 		<div class="display-name"></div>
-		<canvas id="snapshot" ng-class="{show:hover}"></canvas>
-		<div id="snapshot-options" ng-class="{show:hover}">
+		<canvas id="snapshot" ng-class="{show:hover || doNotDisturb}"></canvas>
+		<div id="snapshot-options" ng-class="{show:hover || doNotDisturb}">
 			<div class="interval-toggle">
 				<input type="checkbox" ng-model='haltInterval'></input><span ng-click="haltInterval = !haltInterval">Halt Updates</span>
 			</div>

@@ -116,7 +116,7 @@
 	// 		}
 	// 	}
 	// }])
-	.directive('videoDisplay', ['$rootScope', "$timeout", function($rootScope, $timeout){
+	.directive('videoDisplay', ['$rootScope', "$timeout", "NetworkData", function($rootScope, $timeout, NetworkData){
 		return {
 			restrict: 'E',
 			templateUrl: './directives/video-display.html',
@@ -130,11 +130,13 @@
 				var cw = 640, ch = 480;
 				var context = $canvas[0].getContext('2d');
 				var activeSpeakerId = '';
+				
 				scope.video = null;
 				scope.displayName = '';
 				scope.transmissionStatus = '';
 				scope.acceptMessage = '';
 				scope.declineMessage = '';
+
 
 				$canvas[0].width = cw;
 				$canvas[0].height = ch;
@@ -166,7 +168,7 @@
 							case callStatus.CALLTO:
 								scope.transmissionStatus = "OUTGOING";
 								scope.acceptMessage = '';
-								scope.declineMessage = 'END';
+								scope.declineMessage = 'DISCONNECT';
 								break;
 							case callStatus.CALLFROM:
 								scope.transmissionStatus = "INCOMING";
@@ -176,7 +178,7 @@
 							case callStatus.TWOWAY:
 								scope.transmissionStatus = "CONNECTED";
 								scope.acceptMessage = '';
-								scope.declineMessage = 'END';
+								scope.declineMessage = 'DISCONNECT';
 								$timeout(function(){
 									scope.transmissionStatus = '';
 								}, 1000);
@@ -205,19 +207,22 @@
 							context.clearRect(0,0,cw,ch);
 						}
 					});
-					scope.declineMessage = "END";
+					scope.declineMessage = "DISCONNECT";
 				}
 
 				scope.acceptCall = function(){
-					$rootScope.$broadcast(scope.canvasId+'forceCall', true);
+					scope.$emit('informRoomAboutTransmition', scope.canvasId, true);
+					$rootScope.$broadcast(scope.canvasId+'forceCall', true, false);
 				};
 
 				scope.declineCall = function(){
 					if(scope.canvasId == "active-speaker"){
 						if(scope.video != null)
-							$rootScope.$broadcast(activeSpeakerId+'forceCall', false);
+							scope.$emit('informRoomAboutTransmition', activeSpeakerId, false);
+							$rootScope.$broadcast(activeSpeakerId+'forceCall', false, false);
 					} else {
-						$rootScope.$broadcast(scope.canvasId+'forceCall', false);
+						scope.$emit('informRoomAboutTransmition', scope.canvasId, false);
+						$rootScope.$broadcast(scope.canvasId+'forceCall', false, false);
 					}
 
 				};
@@ -231,6 +236,7 @@
 							if(scope.canvasId == "active-speaker"){
 								activeSpeakerId = id;
 								scope.displayName = easyrtc.idToName(activeSpeakerId);
+								
 							}
 						});
 							
@@ -249,6 +255,24 @@
 			}
 		}
 	}])
+	.directive('showParticipants', function(){
+		return{
+			restrict: "A",
+			link: function(scope, element, attrs){
+				var animate = new TimelineMax({pause: 0});
+				scope.$on('toggleParticipantVisibility', function(e, show){
+					animate.progress(1).clear().eventCallback("onComplete", null);
+					if(show){
+						animate.set(element, {display:"block"})
+						.to(element, .5, {opacity:1});
+					} else {
+						animate.to(element, .5, {opacity:0})
+						.set(element, {display: "none"});
+					}
+				});
+			}
+		}
+	})
 	.controller('StreamController', function($timeout, $interval, $scope, $rootScope, NetworkData){
 		// TODO: Parent Controller
 		$scope.myDisplayName = '';
@@ -256,6 +280,7 @@
 		$scope.allPeers = NetworkData.allPeers;
 		$scope.interactingPeers = NetworkData.interactingPeers;
 		$scope.showRoomContainer = false;
+		$scope.roomMessage = '';
 		var preRoomListenerEvents = [];		// takes an array of functions that need to run after peer is setup
 		// do not create users when 
 		var knownInvalidIds = [];
@@ -265,6 +290,7 @@
 		var serverConnected = false;
 		var localStreamEnded = false;
 		var localStreamWatcher = null;
+		var msgClearInterval = null;
 		
 		var bootUsers = function(){
     	// log out anyone who is no longer in the room
@@ -350,64 +376,7 @@
 				iceConfigPromise = null;
 			}
 		};
-		$scope.$watch(function(){
-			return NetworkData.initializationComplete;
-		}, function(newValue){
-			if(newValue){
-				while(preRoomListenerEvents.length > 0){
-					var tmpFn = preRoomListenerEvents.shift();
-					tmpFn();
-				}
-			}
-		});
-		$scope.$watch(function(){
-			return NetworkData.snapshotInterval;
-		}, function(){
-			if(snapshotPromise != null){
-				$interval.cancel(snapshotPromise);
-				snapshotPromise = null;
-			}
-			if(!NetworkData.haltInterval && serverConnected){
-				startSnapshotInterval();
-			}
-		}, true);
-
-		$scope.$watch(function(){
-			return NetworkData.haltInterval;
-		}, function(newValue, oldValue){
-			if(snapshotPromise != null){
-				$interval.cancel(snapshotPromise);
-				snapshotPromise = null;
-			}
-			// if haltInterval is false and connected start sending snapshots again
-			if(!newValue && serverConnected){
-				startSnapshotInterval();
-			}
-		});
-
-		$scope.$watch(function(){
-			return NetworkData.interactingPeers;
-		}, function(){
-			var count = 0;
-			var id = null;
-			for(var tmp in NetworkData.interactingPeers){
-				count++;
-				id = tmp;
-			}
-			if(count == 0){
-				$scope.$broadcast('hideRoom', true);
-				// $scope.showRoomContainer = false;
-				$rootScope.$emit('stopPlaying:active-speaker');
-			} else {
-				$scope.$broadcast('hideRoom', false);
-
-				// $scope.showRoomContainer = true;
-				// if only one person in room, set as active speaker (if twoway connected)
-				if(count == 1){
-					$rootScope.$emit('setActiveSpeaker:'+id);
-				}
-			}
-		}, true);
+		
 
 		var roomListener = function(roomName, otherPeers) {
 	    // TODO: callback for any changes to the number of occupants in room
@@ -509,7 +478,7 @@
 		    var completedCallbacks = {
 		    	value:0
 		    };
-		    if(realRoomList.length == null){
+		    if(realRoomList == null){
 		    	console.log("Error checking room length: room length is null.", realRoomList);
 		    	return;
 		    }
@@ -537,6 +506,102 @@
 		    }
 		  // });
 	  };
+
+	  var notifyParticipantsInRoom = function(){
+	  	//TODO: If other users are already connected to your room,
+	  	//			let them see people who you are contacting or those contacting you
+	  	
+	  };
+	  var getConnectedParticipants = function(){
+	  	// TODOD: return the participants who are connected to you in the room
+	  	var participantArray = [];
+	  	for(var tmp in NetworkData.interactingPeers){
+	  		if(NetworkData.interactingPeers[tmp].callStatus == callStatus.TWOWAY)
+		  		participantArray.push(tmp);
+	  	}
+	  	return participantArray;
+	  };
+	  $scope.closeRoom = function(){
+	  	for(var peer in NetworkData.allPeers){
+				$scope.$broadcast(peer+'forceCall', false, true);
+			}
+	  }
+	  /*********************** ANGULAR LISTENERS ************************/
+	  $scope.$watch(function(){
+			return NetworkData.initializationComplete;
+		}, function(newValue){
+			if(newValue){
+				while(preRoomListenerEvents.length > 0){
+					var tmpFn = preRoomListenerEvents.shift();
+					tmpFn();
+				}
+			}
+		});
+		$scope.$watch(function(){
+			return NetworkData.snapshotInterval;
+		}, function(){
+			if(snapshotPromise != null){
+				$interval.cancel(snapshotPromise);
+				snapshotPromise = null;
+			}
+			if(!NetworkData.haltInterval && serverConnected){
+				startSnapshotInterval();
+			}
+		}, true);
+
+		$scope.$watch(function(){
+			return NetworkData.haltInterval;
+		}, function(newValue, oldValue){
+			if(snapshotPromise != null){
+				$interval.cancel(snapshotPromise);
+				snapshotPromise = null;
+			}
+			// if haltInterval is false and connected start sending snapshots again
+			if(!newValue && serverConnected){
+				startSnapshotInterval();
+			}
+		});
+
+		$scope.$watch(function(){
+			return NetworkData.interactingPeers;
+		}, function(){
+			var count = 0;
+			NetworkData.connected = 0;
+			var id = null;
+			for(var tmp in NetworkData.interactingPeers){
+				count++;
+				if(NetworkData.interactingPeers[tmp].callStatus == callStatus.TWOWAY){
+					NetworkData.connected++;
+					id = tmp;
+
+				}
+			}
+			if(count == 0){
+				$scope.$broadcast('hideRoom', true);
+				// $scope.showRoomContainer = false;
+				$rootScope.$emit('stopPlaying:active-speaker');
+			} else {
+				$scope.$broadcast('hideRoom', false);
+
+				// $scope.showRoomContainer = true;
+				// if only one person in room, set as active speaker (if twoway connected)
+				if(NetworkData.connected == 0){
+					$rootScope.$emit('stopPlaying:active-speaker');
+				} else {
+					$rootScope.$emit('setActiveSpeaker:'+id);
+
+				}
+				if(NetworkData.connected == 1 && count == 1){
+					// hide participants list if only one person is connected
+					$scope.$broadcast("toggleParticipantVisibility", false);
+				} else {
+					$scope.$broadcast("toggleParticipantVisibility", true);
+
+				}
+			}
+
+		}, true);
+
 		$scope.$on('initStream', function() {
 			// check notification permission and enable if not enabled
 	    notifyMe("You will receive a notification when someone is trying to contact you");
@@ -558,20 +623,59 @@
 	  	
 	  });
 	  
+	  $scope.$on('informRoomAboutTransmition', function(e, id, turnOn){
+			var obj = {
+				id: id,
+				turnOn : turnOn
+			};
+			if(NetworkData.connected > 0){
+				for(var connectedUser in NetworkData.interactingPeers){
+					if(NetworkData.interactingPeers[connectedUser].callStatus == callStatus.TWOWAY){
+						easyrtc.sendData(connectedUser, "roomToggleTransmition", obj);
+					}
+				}
+			}
 
+	  });
+
+	  /************************** EASYRTC LISTENERS ************************/
 	  easyrtc.setPeerListener(function(easyrtcid, msgType, msgData, targeting){
 	    // IMPORTANT: peer listener will begin getting data even before room listener is called
 	    // JSON.stringify(msgData));
 	  	$scope.$apply(function(){
 		    switch(msgType){
 		      case "activateVoice":
+		      	
 		        NetworkData.allPeers[easyrtcid].toggleAudioStream(true);
 		        NetworkData.allPeers[easyrtcid].evalCallState($scope);
+
 		        break;
 		      case "stopVoice":
 		        NetworkData.allPeers[easyrtcid].toggleAudioStream(false);
 		        NetworkData.allPeers[easyrtcid].evalCallState($scope);
 		        break;
+
+		      case "activateRoom":
+		      	// "first time" probe, activates targeted users and calls whoever is connected to that room
+		      	if(NetworkData.connected > 0){
+		        	var tmp = getConnectedParticipants();
+		        	easyrtc.sendPeerMessage(easyrtcid, "activateOthersInRoom", tmp, 
+		        		function(){
+		        			// success...
+		        		},
+		        		function(){
+		        			console.log("ERROR: could not notify other connected users")
+		        		}
+		        	);
+		        }
+		        NetworkData.allPeers[easyrtcid].toggleAudioStream(true);
+		        NetworkData.allPeers[easyrtcid].evalCallState($scope);
+		        break;
+		      case "roomToggleTransmition":
+		      	// when a user connected to more than one other user calls another person,
+		      	// a 'toggleTransmition' method is propagated to all other connected users
+		      	$scope.$broadcast(msgData.id+"forceCall", msgData.turnOn, false);
+		      	break;
 		      case "newSnapshot":
 		        
 		        if(!document[hidden]){
@@ -608,14 +712,35 @@
 		      	
 		      	break;
 		      case "readyForCall":
-		      	NetworkData.allPeers[easyrtcid].toggleTransmition(true, $scope);
+		      	NetworkData.allPeers[easyrtcid].toggleTransmition(true, $scope, true);
 		      	break;
 		      case "groupUpdate":
 		        // network.updateGroups(msgData);
 		        break;
 		      case "actively-speaking":
-		      	$rootScope.$emit('setVideo:active-speaker', $video[0], scope.peer.id);
+		      	$rootScope.$emit('setActiveSpeaker:'+easyrtcid);
 		      	break;
+		      case "activateOthersInRoom":
+		      	// reveals all users connected to peer you are trying to contact
+	      		if(msgClearInterval != null){
+		      		$timeout.cancel(msgClearInterval);
+		      	}
+		      	$scope.roomMessage = "Pinging others connected with " + NetworkData.allPeers[easyrtcid].displayName;
+		      	msgClearInterval = $timeout(function(){
+		      		$scope.roomMessage = '';
+		      		msgClearInterval = null;
+		      	}, 3000);
+
+		      	for(var i = 0; i < msgData.length; i++){
+		      		$scope.$broadcast(msgData[i]+"forceCall", true, true);
+		      	}
+		      	break;
+		      case "setDoNotDisturb":
+		      	$scope.$broadcast(easyrtcid+"setDoNotDisturb", msgData);
+		      	break;
+		      case "getAvailability":
+		      	$scope.$broadcast('sendAvailability', easyrtcid);
+		      	break;	
 		    }
 	    });
 	  });
@@ -645,6 +770,7 @@
 		  	}
 	  	});
 	  });
+	  /******************** BROWSER EVENTS **********************/
 	  window.onfocus = function(){
 	  	// TODO: reinitialize local stream and connect to server
 	  	$scope.$apply(function(){
