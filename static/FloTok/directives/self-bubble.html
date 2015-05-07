@@ -10,7 +10,13 @@
 			<div class="interval" ng-show="!haltInterval">
 				<input type="number" min="5" ng-model='snapshotInterval' input-check></input> sec(s)
 			</div>
-			<i class="fa fa-camera" title="Take Snapshot" ng-click="takeSnapshot()"></i>
+			<div class="toggle-controls">
+				<i class="fa fa-camera" title="Take Snapshot" ng-click="takeSnapshot()"></i>
+				<div style="display:inline-block;">
+					<i class="fa fa-microphone" title='Mute Microphone' ng-hide="muteMicrophone" ng-click="toggleMicrophone()"></i>
+					<i class="fa fa-microphone-slash" title="Unmute Microphone" ng-show="muteMicrophone" ng-click="toggleMicrophone()"></i>
+				</div>
+			</div>
 		</div>
 		<!-- <i class="fa fa-minus-circle"></i> -->
 	</div>

@@ -209,7 +209,23 @@
 					});
 					scope.declineMessage = "DISCONNECT";
 				}
-
+				element.bind('mouseenter', function(){
+					var tmp = scope.canvasId;
+					if(scope.canvasId == 'active-speaker'){
+						tmp = activeSpeakerId;
+					}
+					easyrtc.sendPeerMessage(tmp, 'check_channel', null,
+						function() {
+							// channel works, proceed as intended...
+						},
+						function(){
+							$timeout(function(){
+								if(NetworkData.interactingPeers[tmp])
+									delete NetworkData.interactingPeers[tmp];
+							});
+						}
+					);
+				});
 				scope.acceptCall = function(){
 					scope.$emit('informRoomAboutTransmition', scope.canvasId, true);
 					$rootScope.$broadcast(scope.canvasId+'forceCall', true, false);

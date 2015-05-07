@@ -19,6 +19,7 @@ angular.module('VirtualOffice')
 			scope.haltInterval = false;
 			scope.snapshotInterval = 10;
 			scope.doNotDisturb = globalDoNotDisturb;
+			scope.muteMicrophone = false;
 			var changeSelfView = function(connected){
 
 				var position = statusIndicator.style.position;
@@ -39,7 +40,14 @@ angular.module('VirtualOffice')
 				}
 				animation.play();
 			};
-
+			scope.toggleMicrophone = function(){
+				// invoked my ng-click (no apply necessary)
+				scope.muteMicrophone = !scope.muteMicrophone;
+				var localStream = easyrtc.getLocalStream();
+				var audioTrack = localStream.getAudioTracks()[0];
+				audioTrack.enabled = !scope.muteMicrophone;
+				
+			};
 			scope.takeSnapshot = function(){
 				scope.$broadcast('takeSnapshot');
 			};
@@ -273,8 +281,8 @@ angular.module('VirtualOffice')
 						// channel works, proceed as intended...
 					},
 					function(){
-							console.log('Channel Error, checking roomlength');
-							scope.$emit('checkRoomLength');
+						console.log('Channel Error, checking roomlength');
+						scope.$emit('checkRoomLength');
 					}
 				);
 			};
@@ -427,8 +435,11 @@ angular.module('VirtualOffice')
 			scope.$on(scope.peer.id+"setDoNotDisturb", function(e, setBusy){
 				$timeout(function(){
 					scope.doNotDisturb = setBusy;
-					if(scope.doNotDisturb)
+					if(scope.doNotDisturb){
 						scope.callActionLabel = "NOTIFY USER";
+					} else {
+						scope.callActionLabel = "START CHAT";
+					}
 				});	
 				
 			})

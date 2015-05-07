@@ -175,6 +175,19 @@ FileDriver.prototype.delete = function(req, res) {
           });
       }
   });
-}
+};
+
+FileDriver.prototype.addTag = function(id, callback){
+  
+};
+
+FileDriver.prototype.removeTag = function(id, callback){
+
+};
+
+FileDriver.prototype.getCollectionWithTag = function(){
+
+};
+
 
 exports.FileDriver = FileDriver;

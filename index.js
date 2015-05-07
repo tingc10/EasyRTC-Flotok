@@ -1,3 +1,4 @@
+/// <reference path="../typings/node/node.d.ts"/>
 // Load required modules
 var http    = require("http"),              // http server core modul,
     express = require("express"),           // web framework external module
@@ -224,7 +225,7 @@ app.delete('/db/:collection/:entity', function(req, res) { //A
           else { res.send(200, objs); } //C 200 b/c includes the original doc
        });
    } else {
-       var error = { "message" : "Cannot DELETE a whole collection" }
+       var error = { "message" : "Cannot DELETE a whole collection" };
        res.send(400, error);
    }
 });

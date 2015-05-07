@@ -98,13 +98,19 @@ video, canvas {
   -webkit-transition: opacity 500ms;
 }
 
+.toggle-controls .fa {
+    position: relative;
+    font-size: 20px;
+    padding: 0 5px;
+    color: white;
+}
 
-#snapshot-options .fa{
+.toggle-controls{
 	transform: translate(-50%, 0);
   padding: 2vmin 0;
   bottom: 0;
   color: white;
-  font-size: 3vmin;
+  /*font-size: 3vmin;*/
   position: absolute;
   left: 50%;
   cursor: pointer;
