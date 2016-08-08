@@ -6,22 +6,31 @@ var http    = require("http"),              // http server core modul,
     io      = require("socket.io"),
     easyrtc = require("easyrtc"),          // EasyRTC external module
     fs = require('fs'),
+    bodyParser = require('body-parser'),
     util = require('util'),
     request = require('request'),
     path = require('path'),
     MongoClient = require('mongodb').MongoClient,
     Server = require('mongodb').Server,
     CollectionDriver = require('./custom_dependencies/collectionDriver').CollectionDriver,
-    FileDriver = require('./custom_dependencies/fileDriver').FileDriver;
+    FileDriver = require('./custom_dependencies/fileDriver').FileDriver,
+    ObjectID = require('mongodb').ObjectID;
 
 
 /***************** EXPRESS CONFIGURATIONS *****************/
 // Setup and configure Express http server. Expect a subfolder called "static" to be the web root.
 var app = express();
+app.use(bodyParser.json());
 app.set('port', process.env.PORT || 8080); 
-app.set('views', path.join(__dirname, 'views'));
+// app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
+
 app.use(express.static(path.join(__dirname, 'static')));
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin");
+  next();
+});
 
 /***************** MONGO CONFIGURATIONS ******************/
 var mongoHost = 'localHost'; //A
@@ -157,6 +166,64 @@ app.get('/db/files/:id', function(req, res) {
   
 });
 
+// update file with id with new values, currently only tags
+app.put('/db/files/:id', function(req, res){
+  var id = req.params.id;
+  fileDriver.getCollection(function(err, collection){
+    if(err){
+      console.log(err);
+      res.send(400, err);
+      
+    } else {
+      var newTag = req.body.newTag;
+      if(newTag){
+        collection.update({
+          "_id": ObjectID(id)
+        }, 
+        {
+          $push: {tags:newTag}
+        }, function(err, result){
+          if(err){
+            res.send(400, err);
+          } else {
+            res.send(201,{message: "Tags added"});
+
+          }
+        });
+      } else {
+        res.send(400, {message:"Sent value was not a tag"});
+        console.log("could not update tag");
+      }
+      
+    }
+  });
+});
+
+// get ids with tag
+app.get('/db/files/tags/:tags', function(req, res){
+  var id = req.params.id;
+  var tagsArray = req.params.tags.split(',');
+  fileDriver.getCollection(function(err, collection){
+    if(err){
+      res.send(400, err);
+    } else {
+      var andArray = [];
+      for(var i = 0; i < tagsArray.length; i++){
+        var tmp = {tags: tagsArray[i]};
+        andArray.push(tmp);
+      }
+      collection.find({$and:andArray}).toArray(function(err, documents){
+        if(err){
+          res.send(400, err);
+        } else {
+          res.send(200, documents);
+        }
+      });
+    }
+  });
+});
+
+
 app.delete('/db/files/:id', function(req, res) {
   fileDriver.delete(req,res);
 });
@@ -167,12 +234,12 @@ app.get('/db/:collection', function(req, res) { //A
    collectionDriver.findAll(req.params.collection, function(error, objs) { //C
           if (error) { res.send(400, error); } //D
           else { 
-              if (req.accepts('html')) { //E
-                  res.render('data',{objects: objs, collection: req.params.collection}); //F
-              } else {
+              // if (req.accepts('html')) { //E
+              //     res.render('data',{objects: objs, collection: req.params.collection}); //F
+              // } else {
                 res.set('Content-Type','application/json'); //G
                 res.status(200).send(objs); //H
-              }
+              // }
          }
     });
 });

@@ -1,0 +1,39 @@
+Upcoming Tasks:
+- function to create faux bubbles
+- associate faux-bubbles that links to real bubble
+- show list of people who are connected via faux bubbles
+- "pull up" bubble when clicking on faux bubble
+- order bubble into grid
+	- to be used in search
+- method to call all in array (group call)
+- animation to show status
+
+Dock:
+- shows who is connected in the room
+- return to home button?
+- 
+
+Rooms:
+- room faux-bubble is a square
+- quickly brings up a list of people who were invited into room
+- return button very obivous
+- if speaking to a person already and want to add additional person, drag and drop
+
+Faux-bubbles:
+- do not actually retrieve or do any sort of network listening
+- only stores and quickly retrieves bubble to the center
+
+
+Easyrtc Methods To Try:
+- doesDataChannelWork(otherUser) → {Boolean}
+- getConnectionCount() → {Number}
+- getConnectStatus(otherUser) → {String}
+- setDisconnectListener(disconnectListener)
+- setGotConnection(gotConnectionCB)
+- updatePresence(state, statusText)
+- usernameToIds(username, room)
+- https://groups.google.com/forum/#!topic/easyrtc/OasRGLKWGSY ***** this!!!
+
+Performance Improvements:
+- Make sure to use prototypes!
+- Make more object oriented

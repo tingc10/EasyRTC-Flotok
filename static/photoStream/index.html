@@ -1,13 +1,18 @@
 <!DOCTYPE html>
-<html ng-app="photoStream">
+<html>
 <head>
+  <title>Flotok</title>
   <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.13/angular.min.js"></script>
   <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
   <link rel="stylesheet" href="css/photo-stream.css"></link>
+  <script src='js/photo-stream.js'></script>
+  <script src="js/directives.js"></script>
+  <script src="//cdn.webrtc-experiment.com/getScreenId.js"></script>
+  <script src="//cdn.webrtc-experiment.com/screen.js"></script>
 </head>
-<body ng-controller="PhotoController as loader">
+<body  ng-app="photoStream" ng-controller="PhotoController as loader">
   <div id="img-container">
   	<div id="{{photo._id}}" class='image-wrapper' ng-repeat="photo in loader.photos | orderBy:'-created_at'">
   		<div class="delete" ng-click="loader.deleteImage(photo._id)">
@@ -16,7 +21,11 @@
   		<img ng-src="{{'/db/files/'+ photo._id}}"/>
   		<div class="image-label">
   			{{photo.created_at | date: 'MM/dd/yyyy, h:mma'}}
+        <br />
+        <add-tag img-id="{{photo._id}}"></add-tag>
+        
   		</div>
+
   	</div>
   </div>
   <div id="confirm-delete" ng-hide="loader.deleteId == ''">
@@ -25,6 +34,6 @@
   	<button ng-click="loader.confirmDelete(false)">No</button>
   </div>
   <div class="toast" ng-hide="loader.toastMessage == ''">{{loader.toastMessage}}</div>
-  <script src='js/photo-stream.js'></script>
+  
 </body>
 </html>

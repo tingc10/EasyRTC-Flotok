@@ -1,9 +1,8 @@
-(function(){
-  var socket = io.connect('http://162.209.63.24');
-  var app = angular.module('photoStream', []);
+// (function(){
   var imgContainer = document.getElementById('img-container');
-  
-  app.controller('PhotoController', ['$http', '$timeout',function($http, $timeout){
+  var socket = io.connect('localhost:8080');
+  angular.module('photoStream', ['photoStream.directives'])
+  .controller('PhotoController', ['$http', '$timeout', function($http, $timeout){
     var loader = this;
     loader.photos = [];
     loader.deleteId = '';
@@ -61,7 +60,7 @@
         'Content-Type': "application/json"
       }
     }).success(function(data){
-      // console.log(data);
+      console.log(data);
       loader.photos = data;
     }).error(function(data){
       alert("Sorry! Something went wrong, could not load images...");
@@ -87,4 +86,4 @@
   //       }
   //   });
   // };
-})();
+// })();

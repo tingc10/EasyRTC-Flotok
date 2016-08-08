@@ -35,8 +35,10 @@ if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and 
 }
 var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
 var isChrome = !!window.chrome && !isOpera;
-if(!isChrome){
-  alert("This app is built for Google Chrome Browser, please switch for the most optimal experience");
+var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+if(!isChrome && !isFirefox){
+  alert("This app is only supported on Chrome and Firefox, please switch to one of the supported browers");
+  window.location.assign("/snake")
 }
 
 function notifyMe(message, userId, scope) {

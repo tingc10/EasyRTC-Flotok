@@ -78,7 +78,7 @@ video, canvas {
   left: 50%;
   height: 100%;
   -webkit-filter: grayscale(1);
-  -moz-filter: grayscale(1);
+  filter: grayscale(1);
   -webkit-transition: opacity 500ms;
   -moz-transition: opacity 500ms;
 }
@@ -377,7 +377,7 @@ video, canvas {
 	position: absolute;
 	z-index: 1;
 	-webkit-filter: grayscale(1);
-	-moz-filter: grayscale(1);
+	filter: grayscale(1);
 	opacity: 0;
 	height: 100%;
 	left: 50%;
@@ -450,6 +450,7 @@ video, canvas {
 	right: 10px;
 	font-size: 22px;
 	-webkit-animation: recording 2s infinite;
+	animation: recording 2s infinite;
 	cursor: pointer;
 }
 
@@ -567,7 +568,9 @@ video, canvas {
   top: 50%;
   left: 50%;
   white-space: nowrap;
+  transform: translate(-50%, -50%);
   -webkit-transform: translate(-50%, -50%);
+  -mox-transform: translate(-50%, -50%);
   font-size: 20px;
   font-weight: bold;
 }
@@ -621,10 +624,14 @@ video, canvas {
 
 .faux-bubble .fa.in-progress {
 	-webkit-animation: rotate 2s linear infinite;
+	animation: rotate 2s linear infinite;
+
 }
 
 .faux-meta.glow {
 	-webkit-animation: glow 3s linear infinite;
+	animation: glow 3s linear infinite;
+
 }
 
 .meta-label{
@@ -658,6 +665,9 @@ video, canvas {
 	top: 50%;
 	left: 50%;
 	transform: translate(-50%,-50%);
+	-webkit-transform: translate(-50%,-50%);
+	-moz-transform: translate(-50%,-50%);
+
 	text-transform: uppercase;
 	font-size: 20px;
 	color: white;
@@ -675,6 +685,9 @@ video, canvas {
 .faux-bubble .fa {
 	color: white;
   transform: translate(-50%, -50%);
+  -moz-transform: translate(-50%, -50%);
+  -webkit-transform: translate(-50%, -50%);
+
   position: absolute;
   display: inline;
 
@@ -743,6 +756,9 @@ video, canvas {
 #create-group .fa{
 	color: white;
 	transform: translate(-50%, -50%);
+	-webkit-transform: translate(-50%, -50%);
+	-moz-transform: translate(-50%, -50%);
+
 }
 
 .ring{
@@ -790,7 +806,7 @@ video, canvas {
 	position: absolute;
 	transform: translate(-50%, 0);
 	-webkit-filter: grayscale(1);
-  -moz-filter: grayscale(1);
+  filter: grayscale(1);
 }
 
 
@@ -874,8 +890,18 @@ video, canvas {
 	50% {color: rgba(255,0,0,.5);}
 	100% {color: rgba(255,0,0,1);}
 }
+@keyframes recording {
+	0% {color: rgba(255,0,0,1);}
+	50% {color: rgba(255,0,0,.5);}
+	100% {color: rgba(255,0,0,1);}
+}
 
 @-webkit-keyframes glow {
+	0%{background-color: rgba(5, 155, 5, 0.8); }
+	50%{background-color: rgba(5, 155, 5, 0.4); }
+	100%{background-color: rgba(5, 155, 5, 0.8); }
+}
+@keyframes glow {
 	0%{background-color: rgba(5, 155, 5, 0.8); }
 	50%{background-color: rgba(5, 155, 5, 0.4); }
 	100%{background-color: rgba(5, 155, 5, 0.8); }
@@ -884,6 +910,10 @@ video, canvas {
 @-webkit-keyframes rotate {
 	0%{transform: translate(-50%, -50%) rotate(0deg);}
 	100%{transform: translate(-50%, -50%) rotate(360deg);}
+}
+@keyframes rotate {
+	0%{-moz-transform: translate(-50%, -50%) rotate(0deg);}
+	100%{-moz-transform: translate(-50%, -50%) rotate(360deg);}
 }
 
 /************** MEDIA QUERY ************************/

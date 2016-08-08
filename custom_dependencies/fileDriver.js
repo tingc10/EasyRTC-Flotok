@@ -14,10 +14,15 @@ util.inherits(FileDriver, events.EventEmitter);
 FileDriver.prototype.getCollection = function(callback) {
   // looks through "files" collection
   this.db.collection('files', function(error, file_collection) { 
-    if( error ) 
+    if( error ) {
+      console.log(error);
       callback(error);
-    else 
+
+    }
+    else {
       callback(null, file_collection);
+
+    }
   });
 };
 

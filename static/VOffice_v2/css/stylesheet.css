@@ -1,0 +1,387 @@
+/************* TAG Elements ******************/
+html, body {
+	margin: 0;
+	height: 100%;
+	width: 100%;
+	/*background: linear-gradient(rgba(23, 25, 55, 0.5),rgba(14, 15, 27, 0.8));*/
+	background: linear-gradient(rgba(0, 0, 0, 0.3),rgba(0, 0, 0, 0.3)),url('../img/mountain.jpg');
+	background-size: cover;
+	font-family: Arial;
+	overflow: hidden;
+}
+
+video {
+	height: 100%;
+	position: relative;
+	left: 50%;
+	transform: translate(-50%,0%);
+	-webkit-transform: translate(-50%,0%);
+	-moz-transform: translate(-50%,0%);
+}
+
+/************** ID Elements ******************/
+#username-container {
+	width: 300px;
+	text-align: center;
+	padding: 30px;
+	border-radius: 2px;
+	background-color: rgba(0, 0, 0, 0.65);
+	box-shadow: 3px 3px 3px rgba(0,0,0,.2);
+	opacity: 1;
+	-webkit-transition: opacity 1s;
+	position: relative;
+	z-index: 1;
+	top: 50%;
+	left: 50%;
+	color: white;
+	transform: translate(-50%,-50%);
+	-webkit-transform: translate(-50%, -50%);
+}
+
+#self {
+	position: absolute;;
+	/*left: -33.5px;*/
+}
+
+#self ~ .fa {
+	bottom: 15px;
+	left: 88px;
+	font-size: 20px;
+}
+
+#self ~ .fa:hover {
+	cursor: pointer;
+}
+
+#tool-container {
+	
+	position: fixed;
+
+	right: 10px;
+	top: 10px;
+	z-index: 100;
+	display: none;
+	cursor: pointer;
+
+}
+
+#dock-container {
+	position: absolute;
+	height: 100%;
+	width: 150px;
+	padding-left: 30px;
+	background: -webkit-linear-gradient(left, rgba(0,0,0,0) , rgba(0,0,0,.5));
+	right: 0;
+	top: 0;
+	opacity: 0;
+	overflow: hidden;
+	display: none;
+}
+
+#focused-users {
+	position: absolute;
+	width: 80%;
+	height: 80%;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%,-50%);
+	text-align: center;
+	/*z-index: 30;*/
+
+}
+
+#preview-overlay {
+	position: absolute;
+}
+
+#dock {
+	height: 100%;
+	width: 75px;
+	position: absolute;
+	background-color: rgba(0, 0, 0, 0.59);
+	right: 0;
+	box-shadow: -4px 0px 0 rgba(0, 0, 0, 0.1);
+	z-index: 30;
+}
+/************** Class Elements *****************/
+
+.title {
+	/*font-weight: bold;*/
+
+	margin-bottom: 5px;
+}
+
+.video-container {
+	width: 200px;
+	height: 200px;
+	/*left: 50%;*/
+	top: 50%;
+	/*transform: translate(-50%,-50%);*/
+	overflow: hidden;
+	border-radius: 150px;
+	z-index: 1;
+	position: relative;
+	margin: 100px;
+	width: 0;
+	height: 0;
+	overflow: hidden;
+	z-index: 1;
+	-webkit-transition: width 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275),
+						height 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275),
+						margin 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275);
+
+}
+
+.video-container:hover {
+	cursor: move;
+}
+
+.video-container.keep-mic {
+	z-index: 5;
+}
+
+.remote-user  {
+	/*position: absolute;*/
+	/*opacity: 0;*/
+}
+
+
+#caller-container {
+	position: absolute;
+	top: 0;
+	width: 60%;
+	height: 80%;
+	text-align: center;
+	padding: 10% 20%;
+}
+
+.display-name{
+	position: absolute;
+	right: 5px;
+	bottom: 0px;
+	z-index: 10;
+	color: rgba(255,255,255,0.9);
+	font-size: 16px;
+	width: 100%;
+	text-align: center;
+	padding: 15px 0px 38px 0px;
+	background: linear-gradient(rgba(0,0,0,0.05),rgba(0, 0, 0, 0.7));
+}
+
+.fa {
+	position: absolute;
+	z-index: 10;
+	font-size: 20px;
+	color: rgba(255, 255, 255, .5);
+}
+
+
+
+.remote-user .fa-volume-off, .remote-user .fa-volume-up{
+	left: 110px;
+	bottom: 15px;
+	color: rgba(255,0,0,.5);
+}
+
+.remote-user .fa-volume-up{
+	color: rgba(0,255,0,.5);
+}
+
+.remote-user .fa-microphone-slash{
+	right: 110px;
+	bottom: 15px;
+	color: rgba(255,0,0,.5);
+}
+
+.remote-user .fa-microphone {
+	right: 113px;
+	bottom: 15px;
+	color: rgba(0,255,0,.5);
+}
+
+.remote-user .snapshot {
+	position: absolute;
+	left: -33.5px;
+	z-index: 1;
+	-webkit-filter: grayscale(1);
+	top: 0;
+	opacity: 1;
+}
+
+#dock-container .remote-user {
+	position: relative;
+}
+
+#tool-container .border {
+	border: solid;
+	width: 40px;
+	height: 40px;
+	border-radius: 30px;
+	border-color: rgba(0,0,0,.6);
+	text-align: center;
+	position: relative;
+	margin-top: 10px;
+	-webkit-transition: margin 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275),
+						opacity 500ms;
+}
+#tool-container .border:nth-child(1){
+	margin-top: 0;
+}
+
+#tool-container .border:first-child ~ .border{
+	margin-top: -46px;
+	opacity: 0;
+}
+
+
+#tool-container .fa {
+	position: relative;
+	font-size: 20px;
+	color: rgba(0,0,0,.6);
+	margin-top: 10px;
+}
+
+#dialogue {
+	margin-top: 10%;
+	margin-left: 40%;
+	height: 0;
+	width: 0;
+	opacity: 0;
+	position: absolute;
+	background-color: white;
+	z-index: 100;
+	margin-top: 12px;
+	right: 64px;
+	box-shadow: 3px 3px 5px rgba(0,0,0,.8);
+	border-radius: 4px;
+	padding: 10px;
+	overflow-y: scroll;
+	-webkit-transition: width 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275),
+						height 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275),
+						margin 500ms cubic-bezier(0.175, 0.885, 0.320, 1.275),
+						opacity 500ms;
+}
+
+#dialogue .fa {
+	position: absolute;
+	bottom: 10px;
+	right: 10px;
+	font-size: 22px;
+	-webkit-animation: recording 2s infinite;
+	cursor: pointer;
+}
+
+#interim-transcript {
+	color: grey;
+}
+
+#whiteboard {
+	position: absolute;
+	display: none;
+
+}
+
+#whiteboard .options {
+	position: absolute;
+	left: 8px;
+	bottom: 8px;
+}
+
+#whiteboard .options .option-container {
+	position: relative;
+	cursor: pointer;
+	height: 30px;
+	width: 30px;
+	display: inline-block;
+	padding: 5px;
+	border: solid;
+	border-radius: 35px;
+	text-align: center;
+	background-color: rgba(0,0,0,.7);
+	box-shadow: 1px 1px 5px rgba(0,0,0,.5);
+	overflow: hidden;
+}
+
+#whiteboard .options .option-container:active {
+	box-shadow: none;
+}
+
+#whiteboard .options .option-container .fa {
+	position: relative;
+	font-size: 26px;
+	margin-top: 2px;
+}
+
+#whiteboard .options .sp-replacer {
+	padding: 0;
+	border: none;
+	background: none;
+	display: block;
+	width: 100%;
+	height: 100%;
+	position: relative;
+	z-index: 20;
+}
+
+#whiteboard .options .sp-dd {
+	display: none;
+}
+
+#whiteboard .options .sp-preview {
+	margin: 0;
+	border: solid 1px #7C7C7C;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+
+}
+
+#whiteboard .options .option-container .fa-tint {
+	position: absolute;
+	left: 13px;
+	top: 8px;
+}
+
+#focused-users .status-indicator {
+	position: relative;
+	display: inline-block;
+	margin: auto;
+}
+
+.faux-bubble {
+	width: 50px;
+	height: 50px;
+	border-radius: 50%;
+	border: 1px solid green;
+	position: relative;
+	display: inline-block;
+	margin: 10px;
+	box-shadow: 0 3px 0 rgba(0, 0, 0, 0.52)
+}
+
+.faux-bubble div {
+	position: absolute;
+	display: inline-block;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%,-50%);
+	text-transform: uppercase;
+	font-size: 20px;
+	color: white;
+	cursor: default;
+}
+
+.faux-bubble.is.connected {
+	background-color: green;
+}
+
+.faux-bubble.not.connected {
+	background-color: red;
+}
+
+/***************** KEYFRAMES *************************/
+@-webkit-keyframes recording {
+	0% {color: rgba(255,0,0,1);}
+	50% {color: rgba(255,0,0,.5);}
+	100% {color: rgba(255,0,0,1);}
+}

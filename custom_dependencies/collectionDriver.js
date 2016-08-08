@@ -6,10 +6,12 @@ CollectionDriver = function(db) {
 
 CollectionDriver.prototype.getCollection = function(collectionName, callback) {
   this.db.collection(collectionName, function(error, the_collection) {
-    if( error ) 
+    if( error ){
+      console.log(error);
       callback(error);
-    else 
+    }else{ 
       callback(null, the_collection);
+    }
   });
 };
 
